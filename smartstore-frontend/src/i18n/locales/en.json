@@ -21,6 +21,7 @@
   },
   "sidebar": {
     "overview": "Overview",
+    "pos": "POS / Sales",
     "inventory": "Inventory",
     "uploadedDocuments": "Uploaded Documents",
     "staffRoles": "Staff & Roles"
@@ -104,6 +105,33 @@
     "addDetails": "Add Details",
     "addItem": "Add Item",
     "recentItems": "Recent Items"
+  },
+  "pos": {
+    "title": "Point of Sale",
+    "searchItems": "Search items by name, brand, or barcode...",
+    "noItemsFound": "No items found",
+    "outOfStock": "Out of Stock",
+    "insufficientStock": "Only {{available}} available in stock",
+    "emptyCart": "Cart is empty",
+    "cart": "Cart",
+    "inCart": "{{quantity}} in cart",
+    "subtotal": "Subtotal",
+    "total": "Total",
+    "checkout": "Checkout",
+    "clearCart": "Clear Cart",
+    "selectPayment": "Select Payment Method",
+    "paymentMethod": "Payment Method",
+    "cash": "Cash",
+    "upi": "UPI",
+    "card": "Card",
+    "credit": "Credit",
+    "customerName": "Customer Name (Optional)",
+    "customerPhone": "Customer Phone (Optional)",
+    "totalAmount": "Total Amount: ₹{{amount}}",
+    "processing": "Processing...",
+    "completeSale": "Complete Sale",
+    "saleCompleted": "Sale completed successfully!",
+    "saleFailed": "Failed to complete sale"
   },
   "documents": {
     "uploadedDocuments": "UPLOADED DOCUMENTS",

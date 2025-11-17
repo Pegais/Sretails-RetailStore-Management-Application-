@@ -5,7 +5,7 @@ const saleSchema = new mongoose.Schema(
     saleId: {
       type: String,
       unique: true,
-      required: true,
+      // Not required - will be generated in pre-save hook
     }, // Format: "SALE-2024-001"
 
     storeId: {
@@ -94,16 +94,29 @@ const saleSchema = new mongoose.Schema(
 
 // Generate unique saleId before saving
 saleSchema.pre('save', async function (next) {
-  if (!this.saleId) {
-    const count = await mongoose.model('Sale').countDocuments({
-      storeId: this.storeId,
-      createdAt: {
-        $gte: new Date(new Date().setHours(0, 0, 0, 0)),
-        $lt: new Date(new Date().setHours(23, 59, 59, 999)),
-      },
-    })
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-    this.saleId = `SALE-${dateStr}-${String(count + 1).padStart(3, '0')}`
+  if (!this.saleId || this.isNew) {
+    try {
+      // Get count of sales for this store today
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+      const todayEnd = new Date()
+      todayEnd.setHours(23, 59, 59, 999)
+
+      const count = await mongoose.model('Sale').countDocuments({
+        storeId: this.storeId,
+        saleDate: {
+          $gte: todayStart,
+          $lte: todayEnd,
+        },
+      })
+
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+      this.saleId = `SALE-${dateStr}-${String(count + 1).padStart(3, '0')}`
+    } catch (error) {
+      // Fallback if count fails
+      const timestamp = Date.now()
+      this.saleId = `SALE-${timestamp}-${Math.floor(Math.random() * 1000)}`
+    }
   }
   next()
 })

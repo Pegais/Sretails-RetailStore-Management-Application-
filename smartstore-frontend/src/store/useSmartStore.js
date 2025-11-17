@@ -410,6 +410,178 @@ const createDealerBillSlice = (set, get) => ({
   },
 })
 
+const createSalesSlice = (set, get) => ({
+  cart: [],
+  currentSale: null,
+  sales: [],
+  isSalesLoading: false,
+  salesError: null,
+  salesPagination: { page: 1, limit: 50, total: 0, totalPages: 0 },
+
+  // Cart management
+  addToCart: (item, quantity = 1) => {
+    const cart = get().cart
+    const existingIndex = cart.findIndex((cartItem) => cartItem.itemId === item._id)
+
+    if (existingIndex >= 0) {
+      // Update quantity if item already in cart
+      const updatedCart = [...cart]
+      updatedCart[existingIndex].quantity += quantity
+      set({ cart: updatedCart }, false, 'sales/addToCart:update')
+    } else {
+      // Add new item to cart
+      const cartItem = {
+        itemId: item._id,
+        itemName: item.itemName,
+        brand: item.brand || '',
+        category: item.category || '',
+        quantity,
+        unitPrice: item.price?.sellingPrice || item.price?.mrp || 0,
+        discount: 0,
+        tax: 0,
+        subtotal: (item.price?.sellingPrice || item.price?.mrp || 0) * quantity,
+      }
+      set({ cart: [...cart, cartItem] }, false, 'sales/addToCart:new')
+    }
+  },
+
+  removeFromCart: (itemId) => {
+    set(
+      (state) => ({
+        cart: state.cart.filter((item) => item.itemId !== itemId),
+      }),
+      false,
+      'sales/removeFromCart'
+    )
+  },
+
+  updateCartItem: (itemId, updates) => {
+    set(
+      (state) => ({
+        cart: state.cart.map((item) =>
+          item.itemId === itemId
+            ? {
+                ...item,
+                ...updates,
+                subtotal: (updates.unitPrice || item.unitPrice) * (updates.quantity || item.quantity) - (updates.discount || item.discount || 0) + (updates.tax || item.tax || 0),
+              }
+            : item
+        ),
+      }),
+      false,
+      'sales/updateCartItem'
+    )
+  },
+
+  clearCart: () => set({ cart: [] }, false, 'sales/clearCart'),
+
+  getCartTotal: () => {
+    const cart = get().cart
+    const subtotal = cart.reduce((sum, item) => sum + (item.subtotal || 0), 0)
+    return {
+      subtotal,
+      discount: 0, // Can be added later
+      tax: 0, // Can be added later
+      total: subtotal,
+    }
+  },
+
+  // Sales API
+  async createSale(saleData) {
+    set({ isSalesLoading: true, salesError: null }, false, 'sales/create:start')
+    try {
+      const response = await axiosInstance.post('/api/sales', saleData)
+      const sale = response.data.sale
+      set(
+        {
+          currentSale: sale,
+          cart: [], // Clear cart after successful sale
+          isSalesLoading: false,
+          salesError: null,
+        },
+        false,
+        'sales/create:success'
+      )
+      return sale
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || error.message
+      set({ isSalesLoading: false, salesError: errorMsg }, false, 'sales/create:error')
+      throw error
+    }
+  },
+
+  async fetchSales({ page = 1, limit = 50, startDate, endDate, status, customerId } = {}) {
+    const storeId = get().user?.storeId
+    if (!storeId) {
+      set({ salesError: 'Store context missing', isSalesLoading: false }, false, 'sales/fetch:no-store')
+      return []
+    }
+    set({ isSalesLoading: true, salesError: null }, false, 'sales/fetch:start')
+    try {
+      const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() })
+      if (startDate) params.append('startDate', startDate)
+      if (endDate) params.append('endDate', endDate)
+      if (status) params.append('status', status)
+      if (customerId) params.append('customerId', customerId)
+
+      const response = await axiosInstance.get(`/api/sales?${params.toString()}`)
+      set(
+        {
+          sales: response.data.sales,
+          salesPagination: {
+            page: response.data.pagination.page,
+            limit: response.data.pagination.limit,
+            total: response.data.pagination.total,
+            totalPages: response.data.pagination.totalPages,
+          },
+          isSalesLoading: false,
+          salesError: null,
+        },
+        false,
+        'sales/fetch:success'
+      )
+      return response.data.sales
+    } catch (error) {
+      set(
+        {
+          isSalesLoading: false,
+          salesError: error.response?.data?.error || error.message,
+        },
+        false,
+        'sales/fetch:error'
+      )
+      return []
+    }
+  },
+
+  async getSaleById(saleId) {
+    set({ isSalesLoading: true, salesError: null }, false, 'sales/getById:start')
+    try {
+      const response = await axiosInstance.get(`/api/sales/${saleId}`)
+      set(
+        {
+          currentSale: response.data.sale,
+          isSalesLoading: false,
+          salesError: null,
+        },
+        false,
+        'sales/getById:success'
+      )
+      return response.data.sale
+    } catch (error) {
+      set(
+        {
+          isSalesLoading: false,
+          salesError: error.response?.data?.error || error.message,
+        },
+        false,
+        'sales/getById:error'
+      )
+      return null
+    }
+  },
+})
+
 const useSmartStore = create(
   devtools(
     (set, get) => ({
@@ -417,6 +589,7 @@ const useSmartStore = create(
       ...createInventorySlice(set, get),
       ...createPaymentSlice(set, get),
       ...createDealerBillSlice(set, get),
+      ...createSalesSlice(set, get),
       ...createUiSlice(set, get),
     }),
     { name: 'SmartStore' }

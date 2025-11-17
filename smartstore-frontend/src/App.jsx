@@ -7,6 +7,7 @@ import DashboardLayout from './components/layouts/DashboardLayout'
 import InventoryPage from './pages/InventoryPage'
 import DashboardPage from './pages/DashboardPage'
 import UploadedDocumentsPage from './pages/UploadedDocumentsPage'
+import POSPage from './pages/POSPage'
 import useSmartStore from './store/useSmartStore'
 
 const FullScreenLoader = ({ message = 'Checking session...' }) => (
@@ -63,6 +64,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="pos" element={<POSPage />} />
           <Route path="inventory" element={<InventoryPage />} />
           <Route path="documents" element={<UploadedDocumentsPage />} />
         </Route>

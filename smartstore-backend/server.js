@@ -47,6 +47,7 @@ const multerRoute=require('./routes/multerUploadRoute')
 const dealerRoute=require('./routes/dealerBillRoute');
 const paymentRoutes =require('./routes/paymentRoutes')
 const billRoutes =require('./routes/billRoute');
+const salesRoutes = require('./routes/salesRoutes')
 app.use('/auth', authRoutes)
 
 //Inventory routes
@@ -63,6 +64,9 @@ app.use('/dealer/bill',billRoutes);
 
 //paytmentroutes
 app.use('/dealer/payment',paymentRoutes)
+
+//sales routes
+app.use('/api/sales', salesRoutes)
 
 
 // Server start

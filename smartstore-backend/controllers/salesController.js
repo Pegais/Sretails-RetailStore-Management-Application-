@@ -69,59 +69,74 @@ exports.createSale = async (req, res) => {
 
     // Validate and check inventory availability
     const inventoryUpdates = []
-    const inventoryChecks = []
 
     for (const item of items) {
+      // Validate item data
+      if (!item.itemId) {
+        return res.status(400).json({ error: 'Item ID is required for all items' })
+      }
+
+      const requestedQuantity = Number(item.quantity)
+      if (isNaN(requestedQuantity) || requestedQuantity <= 0) {
+        return res.status(400).json({ error: `Invalid quantity for item ${item.itemName || item.itemId}` })
+      }
+
       const inventoryItem = await InventoryItem.findById(item.itemId)
       if (!inventoryItem) {
-        return res.status(404).json({ error: `Item ${item.itemName} not found` })
+        return res.status(404).json({ error: `Item ${item.itemName || item.itemId} not found` })
       }
 
       // Check if item belongs to store
       if (inventoryItem.storeId.toString() !== storeId.toString()) {
-        return res.status(403).json({ error: `Item ${item.itemName} does not belong to this store` })
+        return res.status(403).json({ error: `Item ${item.itemName || item.itemId} does not belong to this store` })
       }
 
       // Check stock availability
-      const currentStock = inventoryItem.quantity || 0
-      if (currentStock < item.quantity) {
+      const currentStock = Number(inventoryItem.quantity) || 0
+      if (currentStock < requestedQuantity) {
         return res.status(400).json({
-          error: `Insufficient stock for ${item.itemName}. Available: ${currentStock}, Requested: ${item.quantity}`,
+          error: `Insufficient stock for ${item.itemName || item.itemId}. Available: ${currentStock}, Requested: ${requestedQuantity}`,
         })
       }
-
-      inventoryChecks.push({
-        itemId: item.itemId,
-        currentStock,
-        requested: item.quantity,
-        itemName: item.itemName,
-      })
 
       inventoryUpdates.push({
         itemId: item.itemId,
         oldQuantity: currentStock,
-        newQuantity: currentStock - item.quantity,
+        requestedQuantity: requestedQuantity,
+        newQuantity: currentStock - requestedQuantity,
+        itemName: item.itemName || inventoryItem.itemName,
       })
     }
 
     // Create sale
     const sale = await Sale.create({
       storeId,
-      items: items.map((item) => ({
-        itemId: item.itemId,
-        itemName: item.itemName,
-        brand: item.brand || '',
-        category: item.category || '',
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        discount: item.discount || 0,
-        tax: item.tax || 0,
-        subtotal: item.subtotal || item.quantity * item.unitPrice - (item.discount || 0) + (item.tax || 0),
-      })),
-      subtotal: subtotal || items.reduce((sum, item) => sum + (item.subtotal || item.quantity * item.unitPrice), 0),
-      discount: discount || 0,
-      tax: tax || 0,
-      total,
+      items: items.map((item) => {
+        const quantity = Number(item.quantity) || 0
+        const unitPrice = Number(item.unitPrice) || 0
+        const discount = Number(item.discount) || 0
+        const tax = Number(item.tax) || 0
+        const subtotal = item.subtotal || quantity * unitPrice - discount + tax
+
+        return {
+          itemId: item.itemId,
+          itemName: item.itemName || 'Unknown Item',
+          brand: item.brand || '',
+          category: item.category || '',
+          quantity,
+          unitPrice,
+          discount,
+          tax,
+          subtotal: Number(subtotal.toFixed(2)),
+        }
+      }),
+      subtotal: Number(subtotal) || items.reduce((sum, item) => {
+        const itemSubtotal = item.subtotal || (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+        return sum + Number(itemSubtotal)
+      }, 0),
+      discount: Number(discount) || 0,
+      tax: Number(tax) || 0,
+      total: Number(total),
       paymentMethod,
       payments: payments || [{ method: paymentMethod, amount: total }],
       customerId: customerId || null,
@@ -137,10 +152,35 @@ exports.createSale = async (req, res) => {
 
     // Update inventory quantities
     for (const update of inventoryUpdates) {
-      await InventoryItem.findByIdAndUpdate(update.itemId, {
-        $inc: { quantity: -update.requested },
-        updatedAt: new Date(),
-      })
+      const quantityToDeduct = Number(update.requestedQuantity)
+      
+      if (isNaN(quantityToDeduct) || quantityToDeduct <= 0) {
+        console.error(`Invalid quantity to deduct for item ${update.itemId}: ${update.requestedQuantity}`)
+        continue // Skip this item but continue with others
+      }
+
+      // Get current item to check quantity type
+      const currentItem = await InventoryItem.findById(update.itemId)
+      if (!currentItem) {
+        console.error(`Item ${update.itemId} not found during inventory update`)
+        continue
+      }
+
+      // Convert current quantity to number if it's a string
+      const currentQuantity = Number(currentItem.quantity) || 0
+      const newQuantity = currentQuantity - quantityToDeduct
+
+      // Use $set instead of $inc to handle string-to-number conversion
+      await InventoryItem.findByIdAndUpdate(
+        update.itemId,
+        {
+          $set: { 
+            quantity: newQuantity,
+            updatedAt: new Date(),
+          },
+        },
+        { new: true }
+      )
 
       // Log inventory change
       await logInventoryChange(
@@ -177,9 +217,10 @@ exports.createSale = async (req, res) => {
     })
 
     // Populate sale with item details
+    // Note: Customer model doesn't exist yet, so we skip that population
     const populatedSale = await Sale.findById(sale._id)
       .populate('items.itemId', 'itemName brand category price images')
-      .populate('customerId', 'name phone email')
+      // .populate('customerId', 'name phone email') // Will be enabled when Customer model is created
       .populate('soldBy', 'name email')
 
     res.status(201).json({
@@ -224,7 +265,7 @@ exports.getSales = async (req, res) => {
 
     const sales = await Sale.find(query)
       .populate('items.itemId', 'itemName brand category price')
-      .populate('customerId', 'name phone')
+      // .populate('customerId', 'name phone') // Will be enabled when Customer model is created
       .populate('soldBy', 'name')
       .sort({ saleDate: -1, createdAt: -1 })
       .skip(skip)
@@ -256,7 +297,7 @@ exports.getSaleById = async (req, res) => {
 
     const sale = await Sale.findOne({ _id: id, storeId })
       .populate('items.itemId', 'itemName brand category price images specifications')
-      .populate('customerId', 'name phone email address')
+      // .populate('customerId', 'name phone email address') // Will be enabled when Customer model is created
       .populate('soldBy', 'name email')
 
     if (!sale) {

@@ -10,6 +10,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard'
 import InventoryIcon from '@mui/icons-material/Inventory'
 import PeopleIcon from '@mui/icons-material/People'
 import DescriptionIcon from '@mui/icons-material/Description'
+import PointOfSaleIcon from '@mui/icons-material/PointOfSale'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
@@ -20,6 +21,7 @@ const Sidebar = ({ onNavigate }) => {
 
   const menuItems = [
     { label: t('sidebar.overview'), path: '/dashboard', icon: DashboardIcon },
+    { label: t('sidebar.pos'), path: '/dashboard/pos', icon: PointOfSaleIcon },
     { label: t('sidebar.inventory'), path: '/dashboard/inventory', icon: InventoryIcon },
     { label: t('sidebar.uploadedDocuments'), path: '/dashboard/documents', icon: DescriptionIcon },
     { label: t('sidebar.staffRoles'), path: '/dashboard/staff', icon: PeopleIcon, disabled: true },
