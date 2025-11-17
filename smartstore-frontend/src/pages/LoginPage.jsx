@@ -69,7 +69,7 @@ export default function LoginPage() {
             alert(res.data.message || 'OTP sent!')
             setStep('otp')
         } catch (error) {
-            alert(err.response?.data?.message || 'OTP send failed')
+            alert(error.response?.data?.message || 'OTP send failed')
         }
 
     }
@@ -89,7 +89,7 @@ export default function LoginPage() {
                 alert('OTP must have 6 character')
             }
         } catch (error) {
-            alert(err.response?.data?.message || 'Invalid OTP')
+            alert(error.response?.data?.message || 'Invalid OTP')
         }
     }
 

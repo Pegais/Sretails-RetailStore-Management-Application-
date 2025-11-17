@@ -3,9 +3,9 @@ const mongoose = require('mongoose')
 const cors = require('cors')
 const dotenv = require('dotenv')
 const cookieParser = require('cookie-parser')
-require('./workers/billProcessor')
-
 dotenv.config()
+
+
 const passport = require('./config/passport')
 const session = require('cookie-session')
 
@@ -36,6 +36,10 @@ mongoose
   .then(() => console.log('✅ MongoDB connected'))
   .catch((err) => console.error('❌ MongoDB error:', err))
 
+
+//STARTING WORKER
+require('./workers/billProcessor')
+console.log('🔥 Background worker started. Waiting for jobs...');
 // Routes
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const authRoutes = require('./routes/authRoutes')
@@ -51,7 +55,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/multer',multerRoute)
 
 //dealer bill route
-app.use('/api/bill',dealerRoute)
+// app.use('/api/bill',dealerRoute)
 
 
 //billUpload

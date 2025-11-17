@@ -76,7 +76,7 @@ exports.createInventoryItems = async (req, res) => {
           storeId: storeId
         })
         await newItem.save()
-        return { status: 'created', item: newItem.itemName }
+        return { status: 'created'}
       }
     }
 

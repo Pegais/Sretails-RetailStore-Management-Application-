@@ -5,8 +5,8 @@ const dealerBillSchema = new mongoose.Schema({
   dealerName: { type: String, trim: true },
   dealerGSTIN: { type: String, trim: true },
   invoiceNumber: { type: String, trim: true },
-  invoiceDate: { type: Date },
-  totalAmount: { type: Number },
+  invoiceDate: { type: String },
+  totalAmount: { type: String },
  s3Key: { type: String }, // For S3 operations
   status: { 
     type: String, 

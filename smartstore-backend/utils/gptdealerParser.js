@@ -11,6 +11,7 @@ const openai = new OpenAI({
  * @returns {{dealer: Object, items: Array}} Parsed structured JSON
  */
 async function gptDealerBillParser(ocrText) {
+  console.log("THE OCR TEXT PASSED TO GPT :",ocrText)
   const prompt = `
 You are a smart parser for hardware and sanitary bills. The OCR text provided below is raw invoice data extracted from a scanned PDF. Parse and convert it into JSON format with the following structure:
 
