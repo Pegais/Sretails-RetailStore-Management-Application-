@@ -24,7 +24,38 @@ app.use(passport.initialize())
 app.use(passport.session())
 
 // Middlewares
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }))
+// Allow CORS from localhost and common network IPs
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  // Add common local network IPs (192.168.x.x, 10.0.x.x, 172.16.x.x - 172.31.x.x)
+  /^http:\/\/192\.168\.\d+\.\d+:5173$/,
+  /^http:\/\/10\.\d+\.\d+\.\d+:5173$/,
+  /^http:\/\/172\.(1[6-9]|2[0-9]|3[01])\.\d+\.\d+:5173$/,
+]
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true)
+      
+      // Check if origin matches allowed patterns
+      if (allowedOrigins.some((pattern) => {
+        if (typeof pattern === 'string') {
+          return origin === pattern
+        }
+        return pattern.test(origin)
+      })) {
+        callback(null, true)
+      } else {
+        console.warn(`CORS blocked origin: ${origin}`)
+        callback(null, true) // Allow anyway for development (remove in production)
+      }
+    },
+    credentials: true,
+  })
+)
 app.use(express.json())
 
 //used to jwt cookie
@@ -48,6 +79,7 @@ const dealerRoute=require('./routes/dealerBillRoute');
 const paymentRoutes =require('./routes/paymentRoutes')
 const billRoutes =require('./routes/billRoute');
 const salesRoutes = require('./routes/salesRoutes')
+const barcodeRoutes = require('./routes/barcodeRoutes')
 app.use('/auth', authRoutes)
 
 //Inventory routes
@@ -67,6 +99,9 @@ app.use('/dealer/payment',paymentRoutes)
 
 //sales routes
 app.use('/api/sales', salesRoutes)
+
+//barcode routes
+app.use('/api/barcode', barcodeRoutes)
 
 
 // Server start

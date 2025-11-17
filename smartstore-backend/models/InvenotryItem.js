@@ -24,7 +24,7 @@ const inventorySchema = new mongoose.Schema({
   },
 
   description: { type: String }, // Human-friendly + useful for AI search
-  barcode: { type: String, default: null }, // Optional, fallback to image recognition
+  barcode: { type: String, default: null, index: true }, // Optional, indexed for fast lookups
   images: [{ type: String }], // File URLs or paths for product images
 
   tags: [{ type: String }], // e.g., ['bathroom', 'white', 'pedestal']

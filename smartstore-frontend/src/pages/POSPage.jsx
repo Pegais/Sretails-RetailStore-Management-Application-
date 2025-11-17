@@ -33,8 +33,11 @@ import SearchIcon from '@mui/icons-material/Search'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import PaymentIcon from '@mui/icons-material/Payment'
 import ClearIcon from '@mui/icons-material/Clear'
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner'
 import useSmartStore from '../store/useSmartStore'
 import { useTranslation } from 'react-i18next'
+import BarcodeQuickAddModal from '../components/BarcodeQuickAddModal'
+import BarcodeInputModal from '../components/BarcodeInputModal'
 
 const POSPage = () => {
   const { t } = useTranslation()
@@ -53,12 +56,20 @@ const POSPage = () => {
   const isSalesLoading = useSmartStore((state) => state.isSalesLoading)
   const salesError = useSmartStore((state) => state.salesError)
 
+  // Barcode scanning
+  const checkInventoryByBarcode = useSmartStore((state) => state.checkInventoryByBarcode)
+  const productInfo = useSmartStore((state) => state.productInfo)
+  const clearBarcodeState = useSmartStore((state) => state.clearBarcodeState)
+
   // Local state
   const [searchQuery, setSearchQuery] = useState('')
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
+  const [inputModalOpen, setInputModalOpen] = useState(false)
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
+  const [scannedBarcode, setScannedBarcode] = useState(null)
 
   useEffect(() => {
     fetchInventory()
@@ -171,11 +182,68 @@ const POSPage = () => {
     }
   }
 
+  const handleBarcodeInput = async (barcode, result) => {
+    setScannedBarcode(barcode)
+    setInputModalOpen(false)
+
+    if (!result) {
+      // API error - show quick add form anyway
+      setQuickAddOpen(true)
+      return
+    }
+
+    if (result.inventory?.exists) {
+      // Item exists - add to cart
+      try {
+        const item = {
+          _id: result.inventory.itemId,
+          itemName: result.inventory.itemName,
+          brand: result.productInfo?.brand || '',
+          category: result.productInfo?.category || '',
+          price: result.inventory.price,
+          quantity: result.inventory.currentQuantity,
+        }
+        addToCart(item, 1)
+        alert(t('barcode.addedToCart', 'Item added to cart!'))
+        fetchInventory(true) // Refresh inventory
+      } catch (error) {
+        console.error('Error adding to cart:', error)
+        alert(t('barcode.addToCartError', 'Failed to add item to cart'))
+      }
+    } else {
+      // Item doesn't exist - show quick add form
+      setQuickAddOpen(true)
+    }
+  }
+
+
+  const handleQuickAddSuccess = () => {
+    setQuickAddOpen(false)
+    setScannedBarcode(null)
+    clearBarcodeState()
+    alert(t('barcode.itemCreated', 'Item created and added to cart!'))
+  }
+
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      <Typography variant="h5" sx={{ mb: 3, fontWeight: 600, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-        {t('pos.title', 'Point of Sale')}
-      </Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 600, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+          {t('pos.title', 'Point of Sale')}
+        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<QrCodeScannerIcon />}
+          onClick={() => setInputModalOpen(true)}
+          sx={{
+            borderRadius: { xs: 2, sm: 3 },
+            px: { xs: 2, sm: 3 },
+            py: { xs: 1, sm: 1.5 },
+            fontSize: { xs: '0.875rem', sm: '1rem' },
+          }}
+        >
+          {t('barcode.enterBarcode', 'Enter Barcode')}
+        </Button>
+      </Stack>
 
       <Grid container spacing={3}>
         {/* Left Side: Item Search & Selection */}
@@ -441,6 +509,29 @@ const POSPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Barcode Input Modal (Manual Entry) */}
+      <BarcodeInputModal
+        open={inputModalOpen}
+        onClose={() => {
+          setInputModalOpen(false)
+          clearBarcodeState()
+        }}
+        onSuccess={handleBarcodeInput}
+      />
+
+      {/* Barcode Quick Add Modal */}
+      <BarcodeQuickAddModal
+        open={quickAddOpen}
+        onClose={() => {
+          setQuickAddOpen(false)
+          setScannedBarcode(null)
+          clearBarcodeState()
+        }}
+        barcode={scannedBarcode}
+        productInfo={productInfo}
+        onSuccess={handleQuickAddSuccess}
+      />
     </Box>
   )
 }

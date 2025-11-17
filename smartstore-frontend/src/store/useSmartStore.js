@@ -582,6 +582,161 @@ const createSalesSlice = (set, get) => ({
   },
 })
 
+const createBarcodeSlice = (set, get) => ({
+  scannedBarcode: null,
+  productInfo: null,
+  isScanning: false,
+  isLookingUp: false,
+  barcodeError: null,
+
+  async lookupBarcode(barcode) {
+    set({ isLookingUp: true, barcodeError: null }, false, 'barcode/lookup:start')
+    try {
+      const response = await axiosInstance.get(`/api/barcode/lookup/${barcode}`)
+      set(
+        {
+          productInfo: response.data.productInfo,
+          scannedBarcode: barcode,
+          isLookingUp: false,
+          barcodeError: null,
+        },
+        false,
+        'barcode/lookup:success'
+      )
+      return response.data.productInfo
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || error.message
+      set(
+        {
+          isLookingUp: false,
+          barcodeError: errorMsg,
+          productInfo: null,
+        },
+        false,
+        'barcode/lookup:error'
+      )
+      return null
+    }
+  },
+
+  async checkInventoryByBarcode(barcode) {
+    set({ isLookingUp: true, barcodeError: null }, false, 'barcode/checkInventory:start')
+    try {
+      const response = await axiosInstance.get(`/api/barcode/inventory/${barcode}`)
+      set(
+        {
+          productInfo: response.data.productInfo,
+          scannedBarcode: barcode,
+          isLookingUp: false,
+          barcodeError: null,
+        },
+        false,
+        'barcode/checkInventory:success'
+      )
+      return response.data
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || error.message
+      set(
+        {
+          isLookingUp: false,
+          barcodeError: errorMsg,
+          productInfo: null,
+        },
+        false,
+        'barcode/checkInventory:error'
+      )
+      return null
+    }
+  },
+
+  async scanAndAddToCart(barcode, quantity = 1) {
+    set({ isLookingUp: true, barcodeError: null }, false, 'barcode/scanAndAdd:start')
+    try {
+      const response = await axiosInstance.post('/api/barcode/scan', {
+        barcode,
+        quantity,
+        addToCart: true,
+      })
+
+      const { inventory, productInfo } = response.data
+
+      // If item exists, add to cart
+      if (inventory.exists) {
+        const item = await axiosInstance.get(`/api/inventory/${inventory.itemId}`)
+        get().addToCart(item.data, quantity)
+      }
+
+      set(
+        {
+          productInfo,
+          scannedBarcode: barcode,
+          isLookingUp: false,
+          barcodeError: null,
+        },
+        false,
+        'barcode/scanAndAdd:success'
+      )
+
+      return response.data
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || error.message
+      set(
+        {
+          isLookingUp: false,
+          barcodeError: errorMsg,
+        },
+        false,
+        'barcode/scanAndAdd:error'
+      )
+      throw error
+    }
+  },
+
+  async createItemFromBarcode(barcodeData) {
+    set({ isLookingUp: true, barcodeError: null }, false, 'barcode/createItem:start')
+    try {
+      const response = await axiosInstance.post('/api/barcode/create-item', barcodeData)
+      const newItem = response.data.item
+
+      // Add to cart after creation
+      get().addToCart(newItem, barcodeData.quantity || 1)
+
+      set(
+        {
+          isLookingUp: false,
+          barcodeError: null,
+        },
+        false,
+        'barcode/createItem:success'
+      )
+
+      return newItem
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || error.message
+      set(
+        {
+          isLookingUp: false,
+          barcodeError: errorMsg,
+        },
+        false,
+        'barcode/createItem:error'
+      )
+      throw error
+    }
+  },
+
+  clearBarcodeState: () =>
+    set(
+      {
+        scannedBarcode: null,
+        productInfo: null,
+        barcodeError: null,
+      },
+      false,
+      'barcode/clear'
+    ),
+})
+
 const useSmartStore = create(
   devtools(
     (set, get) => ({
@@ -590,6 +745,7 @@ const useSmartStore = create(
       ...createPaymentSlice(set, get),
       ...createDealerBillSlice(set, get),
       ...createSalesSlice(set, get),
+      ...createBarcodeSlice(set, get),
       ...createUiSlice(set, get),
     }),
     { name: 'SmartStore' }

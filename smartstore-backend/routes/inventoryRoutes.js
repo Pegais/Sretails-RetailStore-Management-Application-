@@ -10,6 +10,7 @@ const upload = require('../middlewares/multerUpload');
 
 router.get('/', isAuthenticated, isManagerOrOwner, inventoryController.getItemsByStore)
 router.get('/store/:storeId', isAuthenticated, isManagerOrOwner, inventoryController.getItemsByStore)
+router.get('/barcode/:barcode', isAuthenticated, isManagerOrOwner, inventoryController.findByBarcode)
 router.post('/', isAuthenticated, isManagerOrOwner, inventoryController.createInventoryItems)
 
 // Quick Add suggestions (must be before /:id route)

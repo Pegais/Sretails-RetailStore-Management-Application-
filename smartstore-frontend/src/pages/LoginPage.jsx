@@ -359,7 +359,12 @@ export default function LoginPage() {
                                             fullWidth
                                             variant="outlined"
                                             onClick={() => {
-                                                window.location.href = 'http://localhost:5000/auth/google'
+                                                // Use the same hostname as current page for backend
+                                                const hostname = window.location.hostname
+                                                const backendURL = hostname === 'localhost' || hostname === '127.0.0.1'
+                                                  ? 'http://localhost:5000'
+                                                  : `http://${hostname}:5000`
+                                                window.location.href = `${backendURL}/auth/google`
                                             }}
                                         >
                                             Login with Google

@@ -522,7 +522,38 @@ exports.getItemsByStore = async (req, res) => {
     console.error('Error fetching store inventory:', err)
     res.status(500).json({ error: 'Failed to load inventory' })
   }
-};
+}
+
+// @desc Find inventory item by barcode
+// GET /api/inventory/barcode/:barcode
+exports.findByBarcode = async (req, res) => {
+  try {
+    const storeId = req.user?.storeId || req.params.storeId
+    const { barcode } = req.params
+
+    if (!storeId) {
+      return res.status(400).json({ error: 'Store id missing in request' })
+    }
+
+    if (!barcode) {
+      return res.status(400).json({ error: 'Barcode is required' })
+    }
+
+    const item = await InventoryItem.findOne({
+      storeId,
+      barcode: barcode.trim(),
+    })
+
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found with this barcode' })
+    }
+
+    res.json(item)
+  } catch (err) {
+    console.error('Error fetching item by barcode:', err)
+    res.status(500).json({ error: 'Failed to load item' })
+  }
+}
 
 
 exports.getItem = async (req, res) => {
