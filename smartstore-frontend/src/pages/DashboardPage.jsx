@@ -29,6 +29,7 @@ import WarningIcon from '@mui/icons-material/Warning'
 import HistoryIcon from '@mui/icons-material/History'
 import useSmartStore from '../store/useSmartStore'
 import InventoryChangeLogs from '../components/InventoryChangeLogs'
+import { useTranslation } from 'react-i18next'
 
 const TERMINAL_BILL_STATUSES = ['completed', 'failed', 'manual_review_needed', 'parsing_failed']
 
@@ -109,6 +110,7 @@ const isoDaysAgo = (days) => {
 }
 
 const DashboardPage = () => {
+  const { t } = useTranslation()
   const theme = useTheme()
   const fetchInventory = useSmartStore((s) => s.fetchInventory)
   const items = useSmartStore((s) => s.items)
@@ -163,32 +165,32 @@ const DashboardPage = () => {
 
   const statCards = [
     {
-      label: 'Total Revenue',
+      label: t('dashboard.totalRevenue'),
       value: `₹${dailySummary?.summary?.totalSales?.toLocaleString() || 0}`,
-      helper: `${dailySummary?.summary?.transactionCount || 0} transactions`,
+      helper: `${dailySummary?.summary?.transactionCount || 0} ${t('dashboard.transactions')}`,
       icon: MonetizationOnIcon,
       color: 'success',
     },
     {
-      label: 'Cash vs Digital',
+      label: t('dashboard.cashVsDigital'),
       value: `${dailySummary?.summary?.cash || 0} / ₹${
         (dailySummary?.summary?.upi || 0) + (dailySummary?.summary?.card || 0)
       }`,
-      helper: 'Cash / Digital split',
+      helper: t('dashboard.cashDigitalSplit'),
       icon: TrendingUpIcon,
       color: 'primary',
     },
     {
-      label: 'Inventory Items',
+      label: t('dashboard.inventoryItems'),
       value: items.length,
-      helper: `${lowStockItems.length} low-stock SKUs`,
+      helper: `${lowStockItems.length} ${t('dashboard.lowStockSKUs')}`,
       icon: Inventory2Icon,
       color: 'secondary',
     },
     {
-      label: 'Uploads in queue',
+      label: t('dashboard.uploadsInQueue'),
       value: uploads.filter((u) => !TERMINAL_BILL_STATUSES.includes(u.status)).length,
-      helper: 'Dealer bills processing',
+      helper: t('dashboard.dealerBillsProcessing'),
       icon: WarningIcon,
       color: 'warning',
     },
@@ -232,14 +234,14 @@ const DashboardPage = () => {
 
   const guidance = [
     {
-      title: 'Snap & upload (AI)',
+      title: t('dashboard.snapUpload'),
       formats: '.jpg / .jpeg / .png',
-      description: 'Uploads to S3, runs OCR + GPT, auto-creates items when complete.',
+      description: t('dashboard.snapUploadDescription', 'Uploads to S3, runs OCR + GPT, auto-creates items when complete.'),
     },
     {
-      title: 'Dealer Excel',
+      title: t('dashboard.dealerExcel'),
       formats: '.xls / .xlsx',
-      description: 'Sheet 1 dealer metadata, Sheet 2 items. Parsed instantly and stored on S3.',
+      description: t('dashboard.dealerExcelDescription', 'Sheet 1 dealer metadata, Sheet 2 items. Parsed instantly and stored on S3.'),
     },
   ]
 
@@ -254,13 +256,13 @@ const DashboardPage = () => {
       >
         <Stack spacing={1}>
           <Typography variant="overline" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
-            Welcome back
+            {t('dashboard.welcomeBack')}
           </Typography>
           <Typography variant="h5" fontWeight={600} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-            Today&apos;s live snapshot
+            {t('dashboard.todaySnapshot')}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-            Track revenue, stock health, and dealer uploads as they happen.
+            {t('dashboard.trackRevenue')}
           </Typography>
         </Stack>
       </Box>
@@ -287,7 +289,7 @@ const DashboardPage = () => {
             <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
               <Box>
                 <Typography variant="subtitle1" fontWeight={600}>
-                  Payments today
+                  {t('dashboard.paymentsToday')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {selectedDate}
@@ -335,7 +337,7 @@ const DashboardPage = () => {
             }}
           >
             <Typography variant="subtitle1" fontWeight={600} mb={2} sx={{ fontSize: { xs: '0.95rem', sm: '1rem' } }}>
-              Low stock alerts
+              {t('dashboard.lowStockAlerts')}
             </Typography>
             {isInventoryLoading && <LinearProgress />}
             <Stack spacing={2} mt={2}>
@@ -352,13 +354,13 @@ const DashboardPage = () => {
                   >
                     <Typography fontWeight={600}>{item.itemName}</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Only {item.quantity} {item.unit} left
+                      {t('dashboard.onlyLeft', { quantity: item.quantity, unit: item.unit })}
                     </Typography>
                   </Box>
                 ))
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  No items under the low-stock threshold.
+                  {t('dashboard.noItemsUnderThreshold')}
                 </Typography>
               )}
             </Stack>
@@ -381,10 +383,10 @@ const DashboardPage = () => {
               <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={1}>
                 <Box>
                   <Typography variant="subtitle1" fontWeight={600} sx={{ fontSize: { xs: '0.95rem', sm: '1rem' } }}>
-                    Dealer Bill Upload
+                    {t('dashboard.dealerBillUpload')}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-                    Upload JPEG bills for AI processing or Excel files for instant parsing. Both are stored securely in S3.
+                    {t('dashboard.uploadDescription')}
                   </Typography>
                 </Box>
                 <Chip label="Beta" color="primary" variant="outlined" size="small" sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }} />
@@ -416,7 +418,7 @@ const DashboardPage = () => {
                         {section.title}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Formats: {section.formats}
+                        {t('dashboard.formats')}: {section.formats}
                       </Typography>
                     </Box>
                     <Typography variant="body2" color="text.secondary">
@@ -497,7 +499,7 @@ const DashboardPage = () => {
               <Stack alignItems="center" spacing={2}>
                 <LinearProgress sx={{ width: '100%', maxWidth: 300 }} />
                 <Typography variant="body2" color="text.secondary">
-                  Uploading and processing...
+                  {t('dashboard.uploading')}
                 </Typography>
               </Stack>
             ) : (
@@ -538,16 +540,16 @@ const DashboardPage = () => {
           {/* Recent Uploads List */}
           <Divider sx={{ my: 1 }} />
           <Box>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="subtitle1" fontWeight={600}>
-                Recent Bill Uploads
-              </Typography>
-              {isUploadingBill && <Chip label="Uploading…" size="small" color="primary" />}
-            </Stack>
-            {uploads.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
-                No recent uploads. Drop a bill above to get started.
-              </Typography>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {t('dashboard.recentBillUploads')}
+                  </Typography>
+                  {isUploadingBill && <Chip label={t('dashboard.uploading')} size="small" color="primary" />}
+                </Stack>
+                {uploads.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
+                    {t('dashboard.noRecentUploads')}
+                  </Typography>
             ) : (
               <List dense>
                 {uploads.map((upload) => (
@@ -622,7 +624,7 @@ const DashboardPage = () => {
                 <Stack direction="row" alignItems="center" spacing={1} mb={2}>
                   <HistoryIcon color="primary" />
                   <Typography variant="subtitle1" fontWeight={600} sx={{ fontSize: { xs: '0.95rem', sm: '1rem' } }}>
-                    Recent Inventory Changes
+                    {t('dashboard.recentInventoryChanges')}
                   </Typography>
                 </Stack>
                 <InventoryChangeLogs limit={5} />
@@ -640,7 +642,7 @@ const DashboardPage = () => {
                 }}
               >
                 <Typography variant="subtitle1" fontWeight={600} mb={2} sx={{ fontSize: { xs: '0.95rem', sm: '1rem' } }}>
-                  Inventory Analytics
+                  {t('dashboard.inventoryAnalytics')}
                 </Typography>
                 <Stack spacing={2}>
                   <Box
@@ -653,7 +655,7 @@ const DashboardPage = () => {
                     }}
                   >
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      Total Items
+                      {t('dashboard.totalItems')}
                     </Typography>
                     <Typography variant="h5" fontWeight={600} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
                       {items.length}
@@ -669,7 +671,7 @@ const DashboardPage = () => {
                     }}
                   >
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      Active Items
+                      {t('dashboard.activeItems')}
                     </Typography>
                     <Typography variant="h5" fontWeight={600} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
                       {items.filter((i) => i.status === 'active').length}
@@ -685,7 +687,7 @@ const DashboardPage = () => {
                     }}
                   >
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      Low Stock Items
+                      {t('dashboard.lowStockItems')}
                     </Typography>
                     <Typography variant="h5" fontWeight={600} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
                       {lowStockItems.length}

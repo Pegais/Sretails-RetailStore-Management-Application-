@@ -22,8 +22,11 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import FilterListIcon from '@mui/icons-material/FilterList'
+import AddIcon from '@mui/icons-material/Add'
 import InventoryItemCard from '../components/layouts/inventoryCard'
 import useSmartStore from '../store/useSmartStore'
+import { useTranslation } from 'react-i18next'
+import QuickAddModal from '../components/QuickAddModal'
 
 const InventorySkeleton = () => (
   <Stack spacing={2} sx={{ mb: 3 }}>
@@ -32,6 +35,7 @@ const InventorySkeleton = () => (
 )
 
 const InventoryPage = () => {
+  const { t } = useTranslation()
   const items = useSmartStore((state) => state.items)
   const isInventoryLoading = useSmartStore((state) => state.isInventoryLoading)
   const inventoryError = useSmartStore((state) => state.inventoryError)
@@ -48,12 +52,26 @@ const InventoryPage = () => {
   const [editForm, setEditForm] = useState({})
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
   const [filter, setFilter] = useState('all') // 'all', 'low-stock', 'slow-mover', 'stale', 'active'
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
 
   useEffect(() => {
     if (storeId) {
       fetchInventory()
     }
   }, [fetchInventory, storeId])
+
+  // Keyboard shortcut handler (Ctrl/Cmd + K)
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+        event.preventDefault()
+        setQuickAddOpen(true)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const handleRetry = () => {
     fetchInventory(true)
@@ -80,11 +98,11 @@ const InventoryPage = () => {
   const handleSaveEdit = async () => {
     try {
       await updateInventoryItem(selectedItem._id, { ...editForm, reason: 'Manual edit' })
-      setSnackbar({ open: true, message: 'Item updated successfully', severity: 'success' })
+      setSnackbar({ open: true, message: t('inventory.itemUpdated'), severity: 'success' })
       setEditDialogOpen(false)
       fetchInventory(true)
     } catch (error) {
-      setSnackbar({ open: true, message: error.message || 'Failed to update item', severity: 'error' })
+      setSnackbar({ open: true, message: error.message || t('inventory.updateFailed', 'Failed to update item'), severity: 'error' })
     }
   }
 
@@ -96,21 +114,21 @@ const InventoryPage = () => {
   const handleConfirmDelete = async () => {
     try {
       await deleteInventoryItem(selectedItem._id, 'Manual deletion')
-      setSnackbar({ open: true, message: 'Item deleted successfully', severity: 'success' })
+      setSnackbar({ open: true, message: t('inventory.itemDeleted'), severity: 'success' })
       setDeleteDialogOpen(false)
       fetchInventory(true)
     } catch (error) {
-      setSnackbar({ open: true, message: error.message || 'Failed to delete item', severity: 'error' })
+      setSnackbar({ open: true, message: error.message || t('inventory.deleteFailed', 'Failed to delete item'), severity: 'error' })
     }
   }
 
   const handleQuantityChange = async (itemId, action, amount) => {
     try {
       await updateQuantity(itemId, action, amount, `Quantity ${action} by ${amount}`)
-      setSnackbar({ open: true, message: `Quantity ${action}d successfully`, severity: 'success' })
+      setSnackbar({ open: true, message: t('inventory.quantityUpdated', { action }), severity: 'success' })
       fetchInventory(true)
     } catch (error) {
-      setSnackbar({ open: true, message: error.message || 'Failed to update quantity', severity: 'error' })
+      setSnackbar({ open: true, message: error.message || t('inventory.quantityUpdateFailed', 'Failed to update quantity'), severity: 'error' })
     }
   }
 
@@ -143,16 +161,43 @@ const InventoryPage = () => {
       >
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-            My Inventory
+            {t('inventory.myInventory')}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
             {isInventoryLoading
-              ? 'Refreshing items...'
+              ? t('inventory.refreshingItems')
               : storeId
-                ? `${filteredItems.length} of ${items.length} SKUs${filter !== 'all' ? ` (${filter})` : ''} • Updated just now`
-                : 'Waiting for store context...'}
+                ? `${filteredItems.length} ${t('inventory.of')} ${items.length} ${t('inventory.skus')}${filter !== 'all' ? ` (${t(`inventory.${filter.replace('-', '')}`)})` : ''} • ${t('inventory.updatedJustNow')}`
+                : t('inventory.waitingForStoreContext')}
           </Typography>
         </Box>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setQuickAddOpen(true)}
+            sx={{
+              borderRadius: { xs: 2, sm: 3 },
+              px: { xs: 2, sm: 3 },
+              py: { xs: 1, sm: 1.5 },
+              fontSize: { xs: '0.875rem', sm: '1rem' },
+            }}
+          >
+            {t('inventory.quickAdd', 'Quick Add')}
+          </Button>
+          <Chip
+            label="Ctrl+K"
+            size="small"
+            sx={{
+              height: 24,
+              fontSize: '0.7rem',
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              display: { xs: 'none', sm: 'inline-flex' },
+            }}
+          />
+        </Stack>
       </Stack>
 
       {/* Filters */}
@@ -169,10 +214,10 @@ const InventoryPage = () => {
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" gap={1}>
           <FilterListIcon fontSize="small" color="action" />
           <Typography variant="body2" fontWeight={500} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-            Filter:
+            {t('common.filter')}:
           </Typography>
           <Chip
-            label="All Items"
+            label={t('inventory.allItems')}
             onClick={() => setFilter('all')}
             color={filter === 'all' ? 'primary' : 'default'}
             variant={filter === 'all' ? 'filled' : 'outlined'}
@@ -180,7 +225,7 @@ const InventoryPage = () => {
             sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
           />
           <Chip
-            label="Low Stock"
+            label={t('inventory.lowStock')}
             onClick={() => setFilter('low-stock')}
             color={filter === 'low-stock' ? 'warning' : 'default'}
             variant={filter === 'low-stock' ? 'filled' : 'outlined'}
@@ -188,7 +233,7 @@ const InventoryPage = () => {
             sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
           />
           <Chip
-            label="Slow Mover"
+            label={t('inventory.slowMover')}
             onClick={() => setFilter('slow-mover')}
             color={filter === 'slow-mover' ? 'warning' : 'default'}
             variant={filter === 'slow-mover' ? 'filled' : 'outlined'}
@@ -196,7 +241,7 @@ const InventoryPage = () => {
             sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
           />
           <Chip
-            label="Stale"
+            label={t('inventory.stale')}
             onClick={() => setFilter('stale')}
             color={filter === 'stale' ? 'error' : 'default'}
             variant={filter === 'stale' ? 'filled' : 'outlined'}
@@ -204,7 +249,7 @@ const InventoryPage = () => {
             sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
           />
           <Chip
-            label="Active"
+            label={t('inventory.active')}
             onClick={() => setFilter('active')}
             color={filter === 'active' ? 'success' : 'default'}
             variant={filter === 'active' ? 'filled' : 'outlined'}
@@ -251,8 +296,8 @@ const InventoryPage = () => {
       ) : storeId ? (
         <Alert severity="info">
           {filter !== 'all'
-            ? `No items found for filter "${filter}". Try a different filter.`
-            : 'No inventory items found. Upload a bill or add items manually.'}
+            ? t('inventory.noItemsForFilter', { filter: t(`inventory.${filter.replace('-', '')}`) })
+            : t('inventory.noItemsFound')}
         </Alert>
       ) : (
         <Alert severity="warning">Store context missing. Please relogin.</Alert>
@@ -262,7 +307,7 @@ const InventoryPage = () => {
       <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6">Edit Inventory Item</Typography>
+            <Typography variant="h6">{t('inventory.editInventoryItem')}</Typography>
             <IconButton onClick={() => setEditDialogOpen(false)} size="small">
               <CloseIcon />
             </IconButton>
@@ -271,37 +316,37 @@ const InventoryPage = () => {
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
-              label="Item Name"
+              label={t('inventory.itemName')}
               value={editForm.itemName || ''}
               onChange={(e) => setEditForm({ ...editForm, itemName: e.target.value })}
               fullWidth
               required
             />
             <TextField
-              label="Brand"
+              label={t('inventory.brand')}
               value={editForm.brand || ''}
               onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })}
               fullWidth
             />
             <TextField
-              label="Category"
+              label={t('inventory.category')}
               value={editForm.category || ''}
               onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
               fullWidth
             />
             <Stack direction="row" spacing={2}>
               <TextField
-                label="Quantity"
+                label={t('inventory.quantity')}
                 type="number"
                 value={editForm.quantity || 0}
                 onChange={(e) => setEditForm({ ...editForm, quantity: Number(e.target.value) || 0 })}
                 fullWidth
               />
               <FormControl fullWidth>
-                <InputLabel>Unit</InputLabel>
+                <InputLabel>{t('inventory.unit')}</InputLabel>
                 <Select
                   value={editForm.unit || 'pcs'}
-                  label="Unit"
+                  label={t('inventory.unit')}
                   onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
                 >
                   <MenuItem value="pcs">Pcs</MenuItem>
@@ -313,7 +358,7 @@ const InventoryPage = () => {
             </Stack>
             <Stack direction="row" spacing={2}>
               <TextField
-                label="MRP"
+                label={t('inventory.mrp')}
                 type="number"
                 value={editForm.price?.mrp || 0}
                 onChange={(e) =>
@@ -325,7 +370,7 @@ const InventoryPage = () => {
                 fullWidth
               />
               <TextField
-                label="Selling Price"
+                label={t('inventory.sellingPrice')}
                 type="number"
                 value={editForm.price?.sellingPrice || 0}
                 onChange={(e) =>
@@ -338,43 +383,52 @@ const InventoryPage = () => {
               />
             </Stack>
             <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
+              <InputLabel>{t('inventory.status')}</InputLabel>
               <Select
                 value={editForm.status || 'active'}
-                label="Status"
+                label={t('inventory.status')}
                 onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
               >
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="low-demand">Low Demand</MenuItem>
-                <MenuItem value="stale">Stale</MenuItem>
-                <MenuItem value="archived">Archived</MenuItem>
+                <MenuItem value="active">{t('inventory.active')}</MenuItem>
+                <MenuItem value="low-demand">{t('inventory.slowMover')}</MenuItem>
+                <MenuItem value="stale">{t('inventory.stale')}</MenuItem>
+                <MenuItem value="archived">{t('inventory.archived', 'Archived')}</MenuItem>
               </Select>
             </FormControl>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setEditDialogOpen(false)}>{t('common.cancel')}</Button>
           <Button onClick={handleSaveEdit} variant="contained">
-            Save Changes
+            {t('inventory.saveChanges')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Item</DialogTitle>
+        <DialogTitle>{t('inventory.deleteItem')}</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete <strong>{selectedItem?.itemName}</strong>? This action cannot be undone.
+            {t('inventory.confirmDelete', { itemName: selectedItem?.itemName })}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>{t('common.cancel')}</Button>
           <Button onClick={handleConfirmDelete} color="error" variant="contained">
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Quick Add Modal */}
+      <QuickAddModal
+        open={quickAddOpen}
+        onClose={() => setQuickAddOpen(false)}
+        onSuccess={() => {
+          setSnackbar({ open: true, message: t('inventory.itemAdded', 'Item added successfully'), severity: 'success' })
+        }}
+      />
 
       {/* Snackbar for notifications */}
       <Snackbar

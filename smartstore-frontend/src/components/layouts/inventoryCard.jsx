@@ -3,10 +3,12 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
+import { useTranslation } from 'react-i18next'
 
 const roundToTwoDecimalPlaces = (num) => Math.round((num + Number.EPSILON) * 100) / 100
 
 const InventoryItemCard = ({ item, onEdit, onDelete, onQuantityChange }) => {
+  const { t } = useTranslation()
   const {
     itemName,
     brand,
@@ -145,9 +147,9 @@ const InventoryItemCard = ({ item, onEdit, onDelete, onQuantityChange }) => {
 
         <Divider sx={{ my: 1.5 }} />
         <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
-          <Tooltip title="Days in Inventory">
+          <Tooltip title={t('inventory.daysInStock', { days: daysInInventory })}>
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
-              🕒 {daysInInventory} days in stock
+              🕒 {t('inventory.daysInStock', { days: daysInInventory })}
             </Typography>
           </Tooltip>
           <Stack direction="row" spacing={0.5} alignItems="center">

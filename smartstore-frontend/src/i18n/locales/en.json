@@ -12,7 +12,8 @@
     "retry": "Retry",
     "filter": "Filter",
     "all": "All",
-    "search": "Search"
+    "search": "Search",
+    "language": "Language"
   },
   "topbar": {
     "store": "Store",
@@ -43,7 +44,9 @@
     "dealerBillUpload": "Dealer Bill Upload",
     "uploadDescription": "Upload JPEG bills for AI processing or Excel files for instant parsing. Both are stored securely in S3.",
     "snapUpload": "Snap & upload (AI)",
+    "snapUploadDescription": "Uploads to S3, runs OCR + GPT, auto-creates items when complete.",
     "dealerExcel": "Dealer Excel",
+    "dealerExcelDescription": "Sheet 1 dealer metadata, Sheet 2 items. Parsed instantly and stored on S3.",
     "formats": "Formats",
     "dragDropBill": "Drag & drop your bill here",
     "or": "or",
@@ -61,6 +64,7 @@
   "inventory": {
     "myInventory": "My Inventory",
     "skus": "SKUs",
+    "of": "of",
     "updatedJustNow": "Updated just now",
     "waitingForStoreContext": "Waiting for store context...",
     "refreshingItems": "Refreshing items...",
@@ -69,10 +73,14 @@
     "slowMover": "Slow Mover",
     "stale": "Stale",
     "active": "Active",
+    "archived": "Archived",
+    "lowstock": "Low Stock",
+    "slowmover": "Slow Mover",
     "noItemsFound": "No inventory items found. Upload a bill or add items manually.",
     "noItemsForFilter": "No items found for filter \"{{filter}}\". Try a different filter.",
     "editInventoryItem": "Edit Inventory Item",
     "itemName": "Item Name",
+    "itemNamePlaceholder": "Type item name, brand, or category...",
     "brand": "Brand",
     "category": "Category",
     "quantity": "Quantity",
@@ -85,8 +93,17 @@
     "confirmDelete": "Are you sure you want to delete {{itemName}}? This action cannot be undone.",
     "itemUpdated": "Item updated successfully",
     "itemDeleted": "Item deleted successfully",
+    "itemAdded": "Item added successfully",
+    "addFailed": "Failed to add item",
     "quantityUpdated": "Quantity {{action}}d successfully",
-    "daysInStock": "{{days}} days in stock"
+    "daysInStock": "{{days}} days in stock",
+    "updateFailed": "Failed to update item",
+    "deleteFailed": "Failed to delete item",
+    "quantityUpdateFailed": "Failed to update quantity",
+    "quickAdd": "Quick Add",
+    "addDetails": "Add Details",
+    "addItem": "Add Item",
+    "recentItems": "Recent Items"
   },
   "documents": {
     "uploadedDocuments": "UPLOADED DOCUMENTS",

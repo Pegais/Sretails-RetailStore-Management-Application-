@@ -12,7 +12,8 @@
     "retry": "पुनः प्रयास करें",
     "filter": "फ़िल्टर",
     "all": "सभी",
-    "search": "खोजें"
+    "search": "खोजें",
+    "language": "भाषा"
   },
   "topbar": {
     "store": "स्टोर",
@@ -43,7 +44,9 @@
     "dealerBillUpload": "डीलर बिल अपलोड",
     "uploadDescription": "AI प्रसंस्करण के लिए JPEG बिल या तत्काल पार्सिंग के लिए Excel फ़ाइलें अपलोड करें। दोनों S3 में सुरक्षित रूप से संग्रहीत हैं।",
     "snapUpload": "स्नैप और अपलोड (AI)",
+    "snapUploadDescription": "S3 पर अपलोड करता है, OCR + GPT चलाता है, पूर्ण होने पर स्वचालित रूप से आइटम बनाता है।",
     "dealerExcel": "डीलर Excel",
+    "dealerExcelDescription": "शीट 1 डीलर मेटाडेटा, शीट 2 आइटम। तुरंत पार्स किया गया और S3 पर संग्रहीत।",
     "formats": "प्रारूप",
     "dragDropBill": "अपना बिल यहां खींचें और छोड़ें",
     "or": "या",
@@ -61,6 +64,7 @@
   "inventory": {
     "myInventory": "मेरी इन्वेंटरी",
     "skus": "SKU",
+    "of": "का",
     "updatedJustNow": "अभी अपडेट किया गया",
     "waitingForStoreContext": "स्टोर संदर्भ की प्रतीक्षा कर रहे हैं...",
     "refreshingItems": "आइटम ताज़ा कर रहे हैं...",
@@ -69,10 +73,14 @@
     "slowMover": "धीमी गति से चलने वाला",
     "stale": "बासी",
     "active": "सक्रिय",
+    "archived": "संग्रहीत",
+    "lowstock": "कम स्टॉक",
+    "slowmover": "धीमी गति से चलने वाला",
     "noItemsFound": "कोई इन्वेंटरी आइटम नहीं मिला। एक बिल अपलोड करें या मैन्युअल रूप से आइटम जोड़ें।",
     "noItemsForFilter": "फ़िल्टर \"{{filter}}\" के लिए कोई आइटम नहीं मिला। एक अलग फ़िल्टर आज़माएं।",
     "editInventoryItem": "इन्वेंटरी आइटम संपादित करें",
     "itemName": "आइटम नाम",
+    "itemNamePlaceholder": "आइटम नाम, ब्रांड, या श्रेणी टाइप करें...",
     "brand": "ब्रांड",
     "category": "श्रेणी",
     "quantity": "मात्रा",
@@ -85,8 +93,17 @@
     "confirmDelete": "क्या आप वाकई {{itemName}} को हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।",
     "itemUpdated": "आइटम सफलतापूर्वक अपडेट किया गया",
     "itemDeleted": "आइटम सफलतापूर्वक हटाया गया",
+    "itemAdded": "आइटम सफलतापूर्वक जोड़ा गया",
+    "addFailed": "आइटम जोड़ने में विफल",
     "quantityUpdated": "मात्रा सफलतापूर्वक {{action}} की गई",
-    "daysInStock": "{{days}} दिन स्टॉक में"
+    "daysInStock": "{{days}} दिन स्टॉक में",
+    "updateFailed": "आइटम अपडेट करने में विफल",
+    "deleteFailed": "आइटम हटाने में विफल",
+    "quantityUpdateFailed": "मात्रा अपडेट करने में विफल",
+    "quickAdd": "त्वरित जोड़ें",
+    "addDetails": "विवरण जोड़ें",
+    "addItem": "आइटम जोड़ें",
+    "recentItems": "हाल के आइटम"
   },
   "documents": {
     "uploadedDocuments": "अपलोड किए गए दस्तावेज़",

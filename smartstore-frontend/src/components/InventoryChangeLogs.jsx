@@ -21,6 +21,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import EditIcon from '@mui/icons-material/Edit'
 import useSmartStore from '../store/useSmartStore'
+import { useTranslation } from 'react-i18next'
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
@@ -67,6 +68,7 @@ const getChangeColor = (changeType) => {
 }
 
 const InventoryChangeLogs = ({ itemId = null, limit = 10 }) => {
+  const { t } = useTranslation()
   const changeLogs = useSmartStore((state) => state.changeLogs)
   const isChangeLogsLoading = useSmartStore((state) => state.isChangeLogsLoading)
   const changeLogsError = useSmartStore((state) => state.changeLogsError)
@@ -98,7 +100,7 @@ const InventoryChangeLogs = ({ itemId = null, limit = 10 }) => {
   if (displayLogs.length === 0) {
     return (
       <Alert severity="info" sx={{ mb: 2 }}>
-        No inventory changes recorded yet.
+        {t('changeLogs.noChanges')}
       </Alert>
     )
   }
@@ -125,7 +127,7 @@ const InventoryChangeLogs = ({ itemId = null, limit = 10 }) => {
               primary={
                 <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                   <Typography variant="body2" fontWeight={600} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-                    {log.itemId?.itemName || 'Unknown Item'}
+                    {log.itemId?.itemName || t('changeLogs.unknownItem')}
                   </Typography>
                   <Chip
                     label={log.changeType.replace(/_/g, ' ')}
@@ -139,7 +141,7 @@ const InventoryChangeLogs = ({ itemId = null, limit = 10 }) => {
                 <Box component="div" sx={{ mt: 0.5 }}>
                   {log.quantityChange !== undefined && log.quantityChange !== 0 && (
                     <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                      Quantity: {log.oldQuantity} → {log.newQuantity} (
+                      {t('changeLogs.quantity')}: {log.oldQuantity} → {log.newQuantity} (
                       {log.quantityChange > 0 ? '+' : ''}
                       {log.quantityChange})
                     </Typography>

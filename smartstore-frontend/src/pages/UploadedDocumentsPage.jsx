@@ -34,6 +34,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import DownloadIcon from '@mui/icons-material/Download'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import useSmartStore from '../store/useSmartStore'
+import { useTranslation } from 'react-i18next'
 
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
@@ -73,6 +74,7 @@ const getBillTypeIcon = (billType) => {
 }
 
 const UploadedDocumentsPage = () => {
+  const { t } = useTranslation()
   const theme = useTheme()
   // Use individual selectors to avoid creating new objects on every render
   const allBills = useSmartStore((state) => state.allBills)
@@ -117,10 +119,10 @@ const UploadedDocumentsPage = () => {
     <Stack spacing={3}>
       <Box>
         <Typography variant="h5" sx={{ mb: 1, fontWeight: 600, color: 'primary.main', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-          UPLOADED DOCUMENTS
+          {t('documents.uploadedDocuments')}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-          View and track all your uploaded dealer bills. Images are viewable directly, Excel files can be downloaded.
+          {t('documents.viewTrack')}
         </Typography>
       </Box>
 
@@ -128,24 +130,24 @@ const UploadedDocumentsPage = () => {
       <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid', borderColor: 'divider' }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1.5, sm: 2 }} alignItems={{ xs: 'flex-start', sm: 'center' }} flexWrap="wrap">
           <Typography variant="body2" fontWeight={500}>
-            Filters:
+            {t('common.filter')}:
           </Typography>
           <Chip
-            label="All Status"
+            label={t('documents.allStatus')}
             onClick={() => setFilterStatus('')}
             color={filterStatus === '' ? 'primary' : 'default'}
             variant={filterStatus === '' ? 'filled' : 'outlined'}
             size="small"
           />
           <Chip
-            label="Completed"
+            label={t('documents.completed')}
             onClick={() => setFilterStatus('completed')}
             color={filterStatus === 'completed' ? 'primary' : 'default'}
             variant={filterStatus === 'completed' ? 'filled' : 'outlined'}
             size="small"
           />
           <Chip
-            label="Pending"
+            label={t('documents.pending')}
             onClick={() => setFilterStatus('pending')}
             color={filterStatus === 'pending' ? 'primary' : 'default'}
             variant={filterStatus === 'pending' ? 'filled' : 'outlined'}
@@ -153,21 +155,21 @@ const UploadedDocumentsPage = () => {
           />
           <Box sx={{ flexGrow: 1 }} />
           <Chip
-            label="All Types"
+            label={t('documents.allTypes')}
             onClick={() => setFilterBillType('')}
             color={filterBillType === '' ? 'primary' : 'default'}
             variant={filterBillType === '' ? 'filled' : 'outlined'}
             size="small"
           />
           <Chip
-            label="Images"
+            label={t('documents.images')}
             onClick={() => setFilterBillType('image')}
             color={filterBillType === 'image' ? 'primary' : 'default'}
             variant={filterBillType === 'image' ? 'filled' : 'outlined'}
             size="small"
           />
           <Chip
-            label="Excel"
+            label={t('documents.excel')}
             onClick={() => setFilterBillType('excel')}
             color={filterBillType === 'excel' ? 'primary' : 'default'}
             variant={filterBillType === 'excel' ? 'filled' : 'outlined'}
@@ -182,9 +184,9 @@ const UploadedDocumentsPage = () => {
         </Alert>
       )}
 
-      {allBills.length === 0 && !isBillsLoading ? (
-        <Alert severity="info">No uploaded documents found. Upload bills from the dashboard to get started.</Alert>
-      ) : (
+          {allBills.length === 0 && !isBillsLoading ? (
+            <Alert severity="info">{t('documents.noDocumentsFound')}</Alert>
+          ) : (
         <>
           {/* Grid View */}
           <ImageList
@@ -241,7 +243,7 @@ const UploadedDocumentsPage = () => {
                       {bill.originalFileName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" mt={1} sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
-                      Click to view details
+                      {t('documents.clickToView')}
                     </Typography>
                   </Paper>
                 )}
@@ -256,7 +258,7 @@ const UploadedDocumentsPage = () => {
                         sx={{ height: 20, fontSize: '0.7rem' }}
                       />
                       <Typography variant="caption" color="text.secondary">
-                        {bill.itemsParsed} items
+                        {bill.itemsParsed} {t('documents.items')}
                       </Typography>
                     </Stack>
                   }
@@ -305,7 +307,7 @@ const UploadedDocumentsPage = () => {
       <Dialog open={!!selectedBill} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6">Bill Details</Typography>
+            <Typography variant="h6">{t('documents.billDetails')}</Typography>
             <IconButton onClick={handleCloseDialog} size="small">
               <CloseIcon />
             </IconButton>
@@ -342,7 +344,7 @@ const UploadedDocumentsPage = () => {
                     {selectedBill.originalFileName}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mt={1}>
-                    Excel file - Download to view
+                    {t('documents.downloadToView')}
                   </Typography>
                   <IconButton
                     onClick={() => handleDownload(selectedBill.fileUrl, selectedBill.originalFileName)}
@@ -358,7 +360,7 @@ const UploadedDocumentsPage = () => {
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="text.secondary">
-                    File Name
+                    {t('documents.fileName')}
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
                     {selectedBill.originalFileName}
@@ -366,7 +368,7 @@ const UploadedDocumentsPage = () => {
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="text.secondary">
-                    Status
+                    {t('inventory.status')}
                   </Typography>
                   <Box mt={0.5}>
                     <Chip
@@ -378,7 +380,7 @@ const UploadedDocumentsPage = () => {
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="text.secondary">
-                    Dealer Name
+                    {t('documents.dealerName')}
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
                     {selectedBill.dealerName || 'N/A'}
@@ -386,7 +388,7 @@ const UploadedDocumentsPage = () => {
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="text.secondary">
-                    Invoice Number
+                    {t('documents.invoiceNumber')}
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
                     {selectedBill.invoiceNumber || 'N/A'}
@@ -394,7 +396,7 @@ const UploadedDocumentsPage = () => {
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="text.secondary">
-                    Total Amount
+                    {t('documents.totalAmount')}
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
                     ₹{selectedBill.totalAmount || '0'}
@@ -402,15 +404,15 @@ const UploadedDocumentsPage = () => {
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="text.secondary">
-                    Items Extracted
+                    {t('documents.itemsExtracted')}
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
-                    {selectedBill.itemsParsed || 0} items
+                    {selectedBill.itemsParsed || 0} {t('documents.items')}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="text.secondary">
-                    Uploaded At
+                    {t('documents.uploadedAt')}
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
                     {formatDate(selectedBill.uploadedAt)}
@@ -418,7 +420,7 @@ const UploadedDocumentsPage = () => {
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="caption" color="text.secondary">
-                    Processed At
+                    {t('documents.processedAt')}
                   </Typography>
                   <Typography variant="body1" fontWeight={500}>
                     {formatDate(selectedBill.processedAt)}
