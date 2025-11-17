@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const cors = require('cors')
 const dotenv = require('dotenv')
 const cookieParser = require('cookie-parser')
+require('./workers/billProcessor')
 
 dotenv.config()
 const passport = require('./config/passport')
@@ -39,7 +40,9 @@ mongoose
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const authRoutes = require('./routes/authRoutes')
 const multerRoute=require('./routes/multerUploadRoute')
-const dealerRoute=require('./routes/dealerBillRoute')
+const dealerRoute=require('./routes/dealerBillRoute');
+const paymentRoutes =require('./routes/paymentRoutes')
+const billRoutes =require('./routes/billRoute');
 app.use('/auth', authRoutes)
 
 //Inventory routes
@@ -48,8 +51,14 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/multer',multerRoute)
 
 //dealer bill route
-
 app.use('/api/bill',dealerRoute)
+
+
+//billUpload
+app.use('/dealer/bill',billRoutes);
+
+//paytmentroutes
+app.use('/dealer/payment',paymentRoutes)
 
 
 // Server start

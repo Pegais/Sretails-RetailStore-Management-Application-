@@ -7,7 +7,13 @@ const dealerBillSchema = new mongoose.Schema({
   invoiceNumber: { type: String, trim: true },
   invoiceDate: { type: Date },
   totalAmount: { type: Number },
-
+ s3Key: { type: String }, // For S3 operations
+  status: { 
+    type: String, 
+    enum: ['pending', 'processing', 'completed', 'failed', 'manual_review_needed'],
+    default: 'pending'
+  },
+  processedAt: { type: Date },
   billType: { type: String, enum: ['pdf', 'image', 'csv', 'excel'] },
   fileUrl: { type: String, required: true },
   originalFileName: { type: String },
