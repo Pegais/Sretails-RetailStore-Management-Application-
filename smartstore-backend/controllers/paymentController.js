@@ -1,4 +1,5 @@
 // controllers/paymentController.js
+const mongoose = require('mongoose')
 const Payment = require('../models/Payment');
 
 // Quick add payment (mobile optimized)

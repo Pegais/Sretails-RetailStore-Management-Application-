@@ -4,34 +4,31 @@ import {
   Typography,
   Box,
   Avatar,
-  InputBase,
-  alpha,
   IconButton,
   useTheme,
   useMediaQuery,
-  ClickAwayListener,
+  Button,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import SearchIcon from '@mui/icons-material/Search';
-import CloseIcon from '@mui/icons-material/Close';
-import { useState } from 'react';
+import useSmartStore from '../../store/useSmartStore';
+import { useNavigate } from 'react-router-dom';
+import LanguageToggle from '../LanguageToggle';
+import { useTranslation } from 'react-i18next';
 
 const Topbar = ({ onDrawerToggle }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const user = useSmartStore((state) => state.user);
+  const logout = useSmartStore((state) => state.logout);
 
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const handleSearchToggle = () => {
-    setSearchOpen(!searchOpen);
-  };
-
-  const handleClickAway = () => {
-    if (isMobile && searchOpen) {
-      setSearchOpen(false);
-    }
-  };
+  // Get store name from user object - check multiple possible locations
+  // Priority: storeName (normalized) > store.name > 'Store'
+  const storeName = user?.storeName || user?.store?.name || t('topbar.store');
+  
+  // Get owner name
+  const ownerName = user?.name || t('topbar.owner');
 
   return (
     <AppBar
@@ -53,7 +50,7 @@ const Topbar = ({ onDrawerToggle }) => {
           gap: { xs: 1, sm: 2 },
         }}
       >
-        {/* Left Section: Drawer & Logo */}
+        {/* Left Section: Drawer & Store Name */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {isMobile && (
             <IconButton onClick={onDrawerToggle} color="inherit" edge="start">
@@ -63,103 +60,60 @@ const Topbar = ({ onDrawerToggle }) => {
           <Typography
             variant="h6"
             color="primary"
-            sx={{ fontSize: { xs: '1.1rem', sm: '1.3rem' } }}
+            sx={{ fontSize: { xs: '1.1rem', sm: '1.3rem' }, fontWeight: 600 }}
           >
-            STORE
+            {storeName}
           </Typography>
         </Box>
 
-        {/* Center Section: Search Box */}
-        <ClickAwayListener onClickAway={handleClickAway}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              flex: 1,
-              justifyContent: isMobile ? 'flex-end' : 'center',
-              maxWidth: isMobile ? 'none' : 600,
-              mt: { xs: 1, sm: 0 },
-            }}
-          >
-            {isMobile ? (
-              searchOpen ? (
-                <>
-                  <Box
-                    sx={{
-                      flexGrow: 1,
-                      backgroundColor: alpha('#ffffff', 0.8),
-                      borderRadius: '24px',
-                      px: 2,
-                      py: 0.5,
-                      boxShadow: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      width: '100%',
-                    }}
-                  >
-                    <SearchIcon sx={{ color: 'gray', mr: 1 }} />
-                    <InputBase
-                      autoFocus
-                      placeholder="Search inventory..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      fullWidth
-                      sx={{ fontSize: '0.95rem' }}
-                    />
-                    <IconButton onClick={handleSearchToggle}>
-                      <CloseIcon />
-                    </IconButton>
-                  </Box>
-                </>
-              ) : (
-                <IconButton onClick={handleSearchToggle}>
-                  <SearchIcon />
-                </IconButton>
-              )
-            ) : (
-              <Box
-                sx={{
-                  backgroundColor: alpha('#ffffff', 0.8),
-                  borderRadius: '24px',
-                  px: 2,
-                  py: 0.5,
-                  boxShadow: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  width: '100%',
-                }}
-              >
-                <SearchIcon sx={{ color: 'gray', mr: 1 }} />
-                <InputBase
-                  placeholder="Search inventory..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  fullWidth
-                  sx={{ fontSize: '0.95rem' }}
-                />
-              </Box>
-            )}
-          </Box>
-        </ClickAwayListener>
+        {/* Center Section: Empty for now - can add features later */}
+        <Box sx={{ flex: 1 }} />
 
-        {/* Right Section: Owner Info */}
+        {/* Right Section: Language Toggle, Owner Info */}
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 1,
-            mt: { xs: 1, sm: 0 },
+            gap: { xs: 0.5, sm: 1.5 },
           }}
         >
+          {/* Language Toggle */}
+          <LanguageToggle />
+          
           <Typography
             variant="body2"
             fontWeight={500}
-            sx={{ display: { xs: 'none', sm: 'block' } }}
+            sx={{ 
+              display: { xs: 'none', sm: 'block' },
+              fontSize: { xs: '0.8rem', sm: '0.875rem' },
+            }}
           >
-            Owner Name
+            {ownerName}
           </Typography>
-          <Avatar src="/user-avatar.png" />
+          <Avatar 
+            sx={{ 
+              width: { xs: 32, sm: 36 }, 
+              height: { xs: 32, sm: 36 },
+              bgcolor: 'primary.main',
+            }}
+          >
+            {ownerName.charAt(0).toUpperCase()}
+          </Avatar>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={async () => {
+              await logout();
+              navigate('/', { replace: true });
+            }}
+            sx={{
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              minWidth: { xs: 60, sm: 80 },
+              px: { xs: 1, sm: 2 },
+            }}
+          >
+            {t('common.logout')}
+          </Button>
         </Box>
       </Toolbar>
     </AppBar>

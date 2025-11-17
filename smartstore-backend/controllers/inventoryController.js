@@ -1,4 +1,5 @@
 const InventoryItem = require('../models/InvenotryItem');
+const InventoryChangeLog = require('../models/InventoryChangeLog');
 
 // @desc Create inventory item
 // POST /api/inventory/add
@@ -54,8 +55,11 @@ exports.createInventoryItems = async (req, res) => {
 
       const existing = await InventoryItem.findOne(filter)
 
+      const incomingQuantity = Number(item.quantity) || 0
+
       if (existing) {
-        existing.quantity += item.quantity
+        const currentQuantity = Number(existing.quantity) || 0
+        existing.quantity = currentQuantity + incomingQuantity
         existing.updatedAt = new Date()
         await existing.save()
         return { status: 'updated', item: existing.itemName }
@@ -65,6 +69,7 @@ exports.createInventoryItems = async (req, res) => {
           itemName: normalize(item.itemName),
           brand: normalize(item.brand),
           category: normalize(item.category),
+          quantity: incomingQuantity,
           specifications: {
             ...item.specifications,
             size: normalize(item.specifications?.size),
@@ -110,46 +115,71 @@ exports.createInventoryItems = async (req, res) => {
 
 
 
-// @desc Get all items for a store
-exports.getItemsByStore = async (req, res) => {
-  try {
-    const items = await InventoryItem.find({ storeId: req.params.storeId });
-    res.status(200).json(items);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// @desc Get single item
-exports.getItem = async (req, res) => {
-  try {
-    const item = await InventoryItem.findById(req.params.id);
-    if (!item) return res.status(404).json({ message: 'Item not found' });
-    res.status(200).json(item);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
 // @desc Update item
 
+
+// Helper function to log inventory changes
+const logInventoryChange = async (itemId, storeId, userId, changeType, oldQuantity, newQuantity, reason = '', sourceBillId = null, metadata = {}) => {
+  try {
+    const quantityChange = newQuantity - oldQuantity
+    await InventoryChangeLog.create({
+      itemId,
+      storeId,
+      changedBy: userId,
+      changeType,
+      oldQuantity,
+      newQuantity,
+      quantityChange,
+      reason,
+      sourceBillId,
+      metadata,
+    })
+  } catch (err) {
+    console.error('Failed to log inventory change:', err)
+    // Don't throw - logging failure shouldn't break the main operation
+  }
+}
 
 exports.updateItem = async (req, res) => {
   try {
     const itemId = req.params.id
-    // const userId = req.userId
+    const userId = req.user?.userId
+    const storeId = req.user?.storeId || req.body.storeId
 
     const existingItem = await InventoryItem.findById(itemId)
     if (!existingItem) {
       return res.status(404).json({ message: 'Item not found' })
     }
 
+    // Check if user has permission (same store)
+    if (storeId && existingItem.storeId.toString() !== storeId.toString()) {
+      return res.status(403).json({ message: 'Unauthorized: Item belongs to different store' })
+    }
+
+    const oldQuantity = existingItem.quantity || 0
+    let quantityChanged = false
+    let changeType = 'item_updated'
+
     // ✅ Normalize string fields from request before update
     if (req.body.itemName) existingItem.itemName = normalize(req.body.itemName)
     if (req.body.brand) existingItem.brand = normalize(req.body.brand)
     if (req.body.category) existingItem.category = normalize(req.body.category)
 
-    if (req.body.quantity !== undefined) existingItem.quantity = req.body.quantity
+    if (req.body.quantity !== undefined) {
+      const newQty = Number(req.body.quantity) || 0
+      if (newQty !== oldQuantity) {
+        quantityChanged = true
+        const qtyDiff = newQty - oldQuantity
+        if (qtyDiff > 0) {
+          changeType = 'quantity_increase'
+        } else if (qtyDiff < 0) {
+          changeType = 'quantity_decrease'
+        } else {
+          changeType = 'quantity_set'
+        }
+      }
+      existingItem.quantity = newQty
+    }
     if (req.body.unit) existingItem.unit = req.body.unit
 
     if (req.body.specifications) {
@@ -183,6 +213,21 @@ exports.updateItem = async (req, res) => {
 
     await existingItem.save()
 
+    // Log the change if quantity changed
+    if (quantityChanged && userId) {
+      await logInventoryChange(
+        itemId,
+        existingItem.storeId,
+        userId,
+        changeType,
+        oldQuantity,
+        existingItem.quantity,
+        req.body.reason || 'Manual update',
+        null,
+        { updatedFields: Object.keys(req.body) }
+      )
+    }
+
     res.status(200).json({ message: 'Item updated successfully', item: existingItem })
 
   } catch (err) {
@@ -194,20 +239,159 @@ exports.updateItem = async (req, res) => {
 // @desc Delete item
 exports.deleteItem = async (req, res) => {
   try {
-    const deleted = await InventoryItem.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'Item not found' });
-    res.status(200).json({ message: 'Item deleted successfully' });
+    const userId = req.user?.userId
+    const storeId = req.user?.storeId
+
+    const item = await InventoryItem.findById(req.params.id)
+    if (!item) {
+      return res.status(404).json({ message: 'Item not found' })
+    }
+
+    // Check if user has permission (same store)
+    if (storeId && item.storeId.toString() !== storeId.toString()) {
+      return res.status(403).json({ message: 'Unauthorized: Item belongs to different store' })
+    }
+
+    // Log deletion before deleting
+    if (userId) {
+      await logInventoryChange(
+        item._id,
+        item.storeId,
+        userId,
+        'item_deleted',
+        item.quantity || 0,
+        0,
+        req.body.reason || 'Item deleted',
+        null,
+        { itemName: item.itemName }
+      )
+    }
+
+    await InventoryItem.findByIdAndDelete(req.params.id)
+    res.status(200).json({ message: 'Item deleted successfully' })
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('❌ Inventory delete error:', err)
+    res.status(500).json({ error: err.message })
   }
-};
+}
+
+// @desc Get inventory change logs (last 3 days only)
+exports.getInventoryChangeLogs = async (req, res) => {
+  try {
+    const storeId = req.user?.storeId || req.params.storeId
+    const itemId = req.query.itemId
+    const limit = parseInt(req.query.limit) || 50
+    const page = parseInt(req.query.page) || 1
+    const skip = (page - 1) * limit
+
+    // Only fetch logs from last 3 days
+    const threeDaysAgo = new Date()
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
+
+    const query = {
+      storeId,
+      createdAt: { $gte: threeDaysAgo },
+    }
+    if (itemId) query.itemId = itemId
+
+    const logs = await InventoryChangeLog.find(query)
+      .populate('itemId', 'itemName brand category')
+      .populate('changedBy', 'name email')
+      .populate('sourceBillId', 'originalFileName dealerName')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+
+    const total = await InventoryChangeLog.countDocuments(query)
+
+    res.status(200).json({
+      logs,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    })
+  } catch (err) {
+    console.error('❌ Error fetching change logs:', err)
+    res.status(500).json({ error: err.message })
+  }
+}
+
+// @desc Update quantity (convenience endpoint)
+exports.updateQuantity = async (req, res) => {
+  try {
+    const itemId = req.params.id
+    const userId = req.user?.userId
+    const storeId = req.user?.storeId
+    const { quantity, action, amount, reason } = req.body // action: 'set', 'increase', 'decrease'
+
+    const item = await InventoryItem.findById(itemId)
+    if (!item) {
+      return res.status(404).json({ message: 'Item not found' })
+    }
+
+    if (storeId && item.storeId.toString() !== storeId.toString()) {
+      return res.status(403).json({ message: 'Unauthorized' })
+    }
+
+    const oldQuantity = item.quantity || 0
+    let newQuantity = oldQuantity
+    let changeType = 'quantity_set'
+
+    if (action === 'set' && quantity !== undefined) {
+      newQuantity = Number(quantity) || 0
+      changeType = 'quantity_set'
+    } else if (action === 'increase' && amount !== undefined) {
+      newQuantity = oldQuantity + Number(amount)
+      changeType = 'quantity_increase'
+    } else if (action === 'decrease' && amount !== undefined) {
+      newQuantity = Math.max(0, oldQuantity - Number(amount))
+      changeType = 'quantity_decrease'
+    } else {
+      return res.status(400).json({ message: 'Invalid action or missing parameters' })
+    }
+
+    item.quantity = newQuantity
+    item.updatedAt = new Date()
+    await item.save()
+
+    // Log the change
+    if (userId) {
+      await logInventoryChange(
+        itemId,
+        item.storeId,
+        userId,
+        changeType,
+        oldQuantity,
+        newQuantity,
+        reason || `Quantity ${action}`,
+        null,
+        { action, amount: amount || quantity }
+      )
+    }
+
+    res.status(200).json({
+      message: 'Quantity updated successfully',
+      item,
+      oldQuantity,
+      newQuantity,
+    })
+  } catch (err) {
+    console.error('❌ Quantity update error:', err)
+    res.status(500).json({ error: err.message })
+  }
+}
 
 
 exports.getItemsByStore = async (req, res) => {
   try {
-    const storeId = req.user.storeId
+    const storeId = req.params.storeId || req.user.storeId
+    if (!storeId) {
+      return res.status(400).json({ error: 'Store id missing in request' })
+    }
     const items = await InventoryItem.find({ storeId }).sort({ updatedAt: -1 })
-    console.log(items, "from items");
 
     res.json(items)
   } catch (err) {

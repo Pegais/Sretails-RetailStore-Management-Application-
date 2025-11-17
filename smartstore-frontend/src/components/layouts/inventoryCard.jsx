@@ -1,9 +1,12 @@
-import React from 'react';
-import {
-  Card, CardMedia, CardContent, Typography, Chip, Stack, Box, Divider, Tooltip,
-} from '@mui/material';
+import { Card, CardContent, Typography, Chip, Stack, Box, Divider, Tooltip, Badge, IconButton } from '@mui/material'
+import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
+import AddIcon from '@mui/icons-material/Add'
+import RemoveIcon from '@mui/icons-material/Remove'
 
-const InventoryItemCard = ({ item }) => {
+const roundToTwoDecimalPlaces = (num) => Math.round((num + Number.EPSILON) * 100) / 100
+
+const InventoryItemCard = ({ item, onEdit, onDelete, onQuantityChange }) => {
   const {
     itemName,
     brand,
@@ -12,117 +15,180 @@ const InventoryItemCard = ({ item }) => {
     unit,
     specifications,
     price,
-    description,
     tags,
     images,
     addedAt,
-  } = item;
+    status,
+  } = item
 
-  // Format age
-  const daysInInventory = Math.floor((Date.now() - new Date(addedAt)) / (1000 * 60 * 60 * 24));
-  function roundToTwoDecimalPlaces(num) {
-  return Math.round(num * 100) / 100;
-}
+  const daysInInventory = addedAt ? Math.floor((Date.now() - new Date(addedAt)) / 86400000) : '-'
+
+  const statusPalette = {
+    active: { label: 'In rotation', color: 'success' },
+    'low-demand': { label: 'Slow mover', color: 'warning' },
+    stale: { label: 'Stale', color: 'error' },
+    archived: { label: 'Archived', color: 'default' },
+  }
+
+  const statusChip = statusPalette[status] || statusPalette.active
 
   return (
     <Card
       sx={{
-        display: 'flex',
-        flexDirection: { xs: 'column', sm: 'row' },
-        p: 2,
-        mb: 3,
-        boxShadow: 4,
-        borderRadius: 5,
-        background: 'linear-gradient(to left, #D1F0ED, #F0F8FA)',
+        p: { xs: 2, sm: 2.5 },
+        mb: { xs: 2, sm: 3 },
+        borderRadius: { xs: 2, sm: 3 },
+        background: '#fff',
+        border: '1px solid',
+        borderColor: 'divider',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: 3,
+        },
       }}
     >
-      {/* 🖼 Image */}
-      <CardMedia
-        component="img"
-        sx={{
-          width: { xs: '100%', sm: 300 },
-          height: 160,
-          borderRight:1,
-          borderLeft:1,
-          borderRadius: 4,
-          objectFit: 'cover',
-          backgroundColor: '#f5f5f5',
-        }}
-        image={images?.[0] || '/placeholder.png'}
-        alt={itemName}
-      />
-
-      {/* 📦 Content */}
-      <CardContent sx={{ flex: 1, pl: { sm: 3 }, pt: { xs: 2, sm: 0 } }}>
-        {/* 🏷 Title + Brand */}
-        <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap">
-          <Typography variant="h6" fontWeight="bold" sx={{ mb: 1, color: '#333',textTransform:'uppercase' }}>
-            {itemName}
-          </Typography>
-          <Chip label={brand} variant="outlined" sx={{ fontWeight: 800, color: 'darkgreen',textTransform:'uppercase' }} />
+      <CardContent sx={{ p: 0 }}>
+        <Box display="flex" alignItems="flex-start" justifyContent="space-between" flexWrap="wrap" gap={1}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              variant="h6"
+              fontWeight="bold"
+              sx={{
+                color: '#333',
+                textTransform: 'uppercase',
+                fontSize: { xs: '0.95rem', sm: '1.25rem' },
+                wordBreak: 'break-word',
+              }}
+            >
+              {itemName}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ textTransform: 'uppercase', fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+            >
+              {category || 'Uncategorized'}
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
+            {brand && (
+              <Chip
+                label={brand}
+                variant="outlined"
+                size="small"
+                sx={{
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                  height: { xs: 20, sm: 24 },
+                }}
+              />
+            )}
+            <Badge
+              color={statusChip.color}
+              badgeContent={statusChip.label}
+              sx={{
+                '& .MuiBadge-badge': {
+                  textTransform: 'capitalize',
+                  fontSize: { xs: '0.6rem', sm: '0.7rem' },
+                },
+              }}
+            />
+          </Stack>
         </Box>
 
-        {/* 📋 Specs */}
-        <Typography variant="body2" sx={{ color: '#555' }}>
-          {[
-            specifications?.variant,
-            specifications?.color,
-            specifications?.material,
-            specifications?.size,
-            specifications?.dimensions,
-          ]
+        <Typography
+          variant="body2"
+          sx={{
+            color: '#555',
+            mt: 0.5,
+            fontSize: { xs: '0.8rem', sm: '0.875rem' },
+            wordBreak: 'break-word',
+          }}
+        >
+          {[specifications?.variant, specifications?.color, specifications?.material, specifications?.size]
             .filter(Boolean)
-            .join(' | ')}
+            .join(' • ') || 'No specifications'}
         </Typography>
 
-        {/* 💰 Price Details */}
-        <Stack direction="row" spacing={2} alignItems="center" mt={1}>
-          <Typography variant="body1" fontWeight="bold" color="primary">
-            ₹{price.sellingPrice || 0}
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 2 }} alignItems="baseline" mt={1}>
+          <Typography variant="h6" color="primary" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+            ₹{price?.sellingPrice ?? price?.mrp ?? 0}
           </Typography>
-         
-          {
-            price.sellingPrice && price.sellingPrice !== price.mrp ?
-            <>
-            <Typography variant="body2" sx={{ textDecoration: 'line-through', color: 'gray' }}>
-            ₹{price.mrp}
-          </Typography>
-          <Typography variant="caption" color="success.main">
-            You save ₹{roundToTwoDecimalPlaces(price.mrp - price.sellingPrice)}
-          </Typography>
-            </>
-          :
-           <Typography variant="caption" color="success.main">
-            {price.mrp}
-          </Typography>
-            
-          }
+          {price?.sellingPrice && price?.sellingPrice !== price?.mrp && (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="body2" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
+                ₹{price?.mrp}
+              </Typography>
+              <Typography variant="caption" color="success.main">
+                Save ₹{roundToTwoDecimalPlaces(price.mrp - price.sellingPrice)}
+              </Typography>
+            </Stack>
+          )}
         </Stack>
 
-        {/* 📦 Quantity */}
         <Typography variant="body2" mt={1}>
-          In Stock: <strong>{quantity}</strong> {unit}
+          In Stock:{' '}
+          <strong>
+            {quantity} {unit}
+          </strong>
         </Typography>
 
-        {/* 🧠 Tags */}
         {tags?.length > 0 && (
           <Stack direction="row" spacing={1} mt={1} flexWrap="wrap">
-            {tags.slice(0, 4).map((tag, index) => (
-              <Chip key={index} label={tag} size="small" variant="outlined" />
+            {tags.slice(0, 4).map((tag) => (
+              <Chip key={tag} label={tag} size="small" variant="outlined" />
             ))}
           </Stack>
         )}
 
-        {/* 🕒 Age */}
-        <Divider sx={{ my: 1 }} />
-        <Tooltip title="Days in Inventory">
-          <Typography variant="caption" color="text.secondary">
-            🕒 {daysInInventory} days in stock
-          </Typography>
-        </Tooltip>
+        <Divider sx={{ my: 1.5 }} />
+        <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
+          <Tooltip title="Days in Inventory">
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+              🕒 {daysInInventory} days in stock
+            </Typography>
+          </Tooltip>
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            {/* Quantity Controls */}
+            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, px: 0.5 }}>
+              <IconButton
+                size="small"
+                onClick={() => onQuantityChange && onQuantityChange(item._id, 'decrease', 1)}
+                disabled={!onQuantityChange}
+                sx={{ p: 0.5 }}
+              >
+                <RemoveIcon fontSize="small" />
+              </IconButton>
+              <Typography variant="body2" sx={{ minWidth: 30, textAlign: 'center', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                {quantity}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={() => onQuantityChange && onQuantityChange(item._id, 'increase', 1)}
+                disabled={!onQuantityChange}
+                sx={{ p: 0.5 }}
+              >
+                <AddIcon fontSize="small" />
+              </IconButton>
+            </Stack>
+            {/* Edit/Delete Buttons */}
+            {onEdit && (
+              <IconButton size="small" onClick={() => onEdit(item)} sx={{ p: 0.5 }}>
+                <EditIcon fontSize="small" />
+              </IconButton>
+            )}
+            {onDelete && (
+              <IconButton size="small" onClick={() => onDelete(item._id)} color="error" sx={{ p: 0.5 }}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Stack>
+        </Box>
       </CardContent>
     </Card>
-  );
-};
+  )
+}
 
-export default InventoryItemCard;
+export default InventoryItemCard

@@ -5,30 +5,33 @@ const { isAuthenticated, isManagerOrOwner } = require('../middlewares/authmiddle
 const upload = require('../middlewares/multerUpload');
 
 
-// 🟢 Public routes for customers
-router.get('/', isAuthenticated, isManagerOrOwner, inventoryController.getItemsByStore); // read-only
-router.get('/:id', inventoryController.getItem);
+router.get('/', isAuthenticated, isManagerOrOwner, inventoryController.getItemsByStore)
+router.get('/store/:storeId', isAuthenticated, isManagerOrOwner, inventoryController.getItemsByStore)
+router.post('/', isAuthenticated, isManagerOrOwner, inventoryController.createInventoryItems)
+router.get('/:id', isAuthenticated, isManagerOrOwner, inventoryController.getItem)
+router.put('/:id', isAuthenticated, isManagerOrOwner, inventoryController.updateItem)
+router.delete('/:id', isAuthenticated, isManagerOrOwner, inventoryController.deleteItem)
 
-
-// Protected routes
-// CRUD Routes
-router.post('/', isAuthenticated, isManagerOrOwner, inventoryController.createInventoryItems);
-router.get('/store/:storeId', isAuthenticated, isManagerOrOwner, inventoryController.getItemsByStore);
-router.get('/:id', isAuthenticated, isManagerOrOwner, inventoryController.getItem);
-router.put('/:id', isAuthenticated, isManagerOrOwner, inventoryController.updateItem);
-router.delete('/:id', isAuthenticated, isManagerOrOwner, inventoryController.deleteItem);
-// Upload images and update InventoryItem's images array
 router.post(
-    '/upload-images/:itemId',
-    upload.array('images', 5), // allow up to 5 images
-    inventoryController.uploadImageToInventory
-);
+  '/upload-images/:itemId',
+  isAuthenticated,
+  isManagerOrOwner,
+  upload.array('images', 5),
+  inventoryController.uploadImageToInventory
+)
 
-// for dealer bill upload
 router.post(
-    '/dealer-bill-upload',
-    upload.single('file'),
-   inventoryController.dealerBillUploadController
-);
+  '/dealer-bill-upload',
+  isAuthenticated,
+  isManagerOrOwner,
+  upload.single('file'),
+  inventoryController.dealerBillUploadController
+)
+
+// Quantity management
+router.patch('/:id/quantity', isAuthenticated, isManagerOrOwner, inventoryController.updateQuantity)
+
+// Change logs
+router.get('/logs/changes', isAuthenticated, isManagerOrOwner, inventoryController.getInventoryChangeLogs)
 
 module.exports = router;

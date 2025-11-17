@@ -5,6 +5,7 @@ const gptDealerBillParser = require('../utils/gptdealerParser');
 const DealerBill = require('../models/dealerBill');
 const InventoryItem = require('../models/InvenotryItem');
 const s3Service = require('../services/s3UploadService');
+const { findOrCreateInventoryItem } = require('../utils/inventoryHelper');
 
 // Process bills in background
 billProcessingQueue.process(async (job) => {
@@ -63,30 +64,42 @@ billProcessingQueue.process(async (job) => {
 
     // Step 5: Save to Database
     const savedItemIds = [];
+    let itemsCreated = 0;
+    let itemsUpdated = 0;
 
     for (const item of parsedData.items) {
       try {
-        const newItem = await InventoryItem.create({
+        const itemPayload = {
           itemName: item.itemName,
           brand: item.brand || 'Unknown',
           category: item.category || 'Uncategorized',
-          quantity: item.quantity,
+          quantity: item.quantity || 0,
           unit: item.unit || 'pcs',
-          specifications: item.specifications,
-          price: item.price,
+          specifications: item.specifications || {},
+          price: item.price || { mrp: 0, sellingPrice: 0 },
           storeId,
           createdBy: userId,
           sourceBillId: billId,
           dealer: {
             name: parsedData.dealer?.dealerName,
-            gstin: parsedData.dealer?.dealerGSTIN
+            gstin: parsedData.dealer?.dealerGSTIN,
+            billId: billId,
           },
           meta: {
             confidenceScore: item.confidenceScore || confidence
           }
-        });
+        };
 
-        savedItemIds.push(newItem._id);
+        const result = await findOrCreateInventoryItem(itemPayload, storeId);
+        savedItemIds.push(result.item._id);
+        
+        if (result.action === 'created') {
+          itemsCreated++;
+          console.log(`✅ Created new item: ${item.itemName}`);
+        } else if (result.action === 'updated') {
+          itemsUpdated++;
+          console.log(`🔄 Updated quantity for: ${item.itemName} (${result.oldQuantity} → ${result.newQuantity})`);
+        }
       } catch (err) {
         console.warn('⚠️ Failed to save item:', item.itemName, err.message);
       }
@@ -105,7 +118,9 @@ billProcessingQueue.process(async (job) => {
       meta: {
         ocrConfidence: confidence,
         itemsExtracted: parsedData.items.length,
-        itemsSaved: savedItemIds.length
+        itemsSaved: savedItemIds.length,
+        itemsCreated,
+        itemsUpdated,
       },
       processedAt: new Date()
     });

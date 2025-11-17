@@ -26,6 +26,8 @@ import * as Yup from 'yup'
 import { Visibility, VisibilityOff } from '@mui/icons-material'
 import { useState } from 'react'
 import axiosInstance from '../api/axiosInstance'
+import { useNavigate } from "react-router-dom"
+import useSmartStore from '../store/useSmartStore'
 
 // Modal 
 import {
@@ -40,6 +42,9 @@ import {
 
 export default function LoginPage() {
 
+    const navigate = useNavigate();
+    const setUser = useSmartStore((state) => state.setUser)
+    const fetchSession = useSmartStore((state) => state.fetchSession)
     const [showPassword, setShowPassword] = useState(false)
 
 
@@ -144,9 +149,16 @@ export default function LoginPage() {
                 console.log(values,"values");
                 
                 const res = await axiosInstance.post('/auth/login', values)
-
+                const loggedInUser = res.data?.user
+                if (loggedInUser) {
+                    setUser(loggedInUser)
+                } else {
+                    // fallback: re-fetch session
+                    await fetchSession(true)
+                }
                 console.log('✅ Logged in:', res.data)
-                alert(`Welcome ${res.data.name || 'User'}!`)
+                alert(`Welcome ${loggedInUser?.name || 'User'}!`)
+                navigate('/dashboard', { replace: true })
 
                 // TODO: Optional: store user in context or global state
                 // TODO: Redirect to dashboard if route exists

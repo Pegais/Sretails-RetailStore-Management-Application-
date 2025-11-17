@@ -5,7 +5,7 @@ const inventorySchema = new mongoose.Schema({
   brand: { type: String, required: true, trim: true },
   category: { type: String, trim: true }, // e.g., Paint, Pipe, Tap
 
-  quantity: { type: String,},
+  quantity: { type: Number, default: 0 },
   unit: { type: String, default: "pcs" }, // pcs, litres, kg, etc.
 
   specifications: {

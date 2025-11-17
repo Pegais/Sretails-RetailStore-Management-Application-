@@ -1,76 +1,92 @@
-import React, { useState } from 'react';
-import { Box, useTheme, useMediaQuery, Drawer, IconButton } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import Sidebar from './Sidebar';
-import Topbar from './Topbar';
+import { useState } from 'react'
+import { Outlet } from 'react-router-dom'
+import { Box, Drawer, useMediaQuery, useTheme } from '@mui/material'
+import Sidebar from './Sidebar'
+import Topbar from './Topbar'
 
-const DashboardLayout = ({ children }) => {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+const drawerWidth = 260
+
+const DashboardLayout = () => {
+  const theme = useTheme()
+  const isMdDown = useMediaQuery(theme.breakpoints.down('md'))
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleDrawerToggle = () => {
-    setMobileOpen((prev)=>!prev);
-  };
+    setMobileOpen((prev) => !prev)
+  }
+
+  const drawerContent = (
+    <Box sx={{ px: 2, py: 3 }}>
+      <Sidebar onNavigate={isMdDown ? handleDrawerToggle : undefined} />
+    </Box>
+  )
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      {/* Topbar */}
-      <Box sx={{ position: 'fixed', width: '100%', zIndex: 1300 }}>
-        <Topbar onDrawerToggle={handleDrawerToggle} />
-      </Box>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
+      <Topbar onDrawerToggle={handleDrawerToggle} />
 
-      {/* Sidebar */}
-      {!isMobile ? (
+      <Box sx={{ display: 'flex' }}>
         <Box
+          component="nav"
           sx={{
-            width: 200,
-            position: 'fixed',
-            top: 64,
-            left: 0,
-            bgcolor: '#f4f4f4',
-            borderRight: '1px solid #ddd',
-            height: 'calc(100vh - 64px)',
-            zIndex: 1200,
+            width: { md: drawerWidth },
+            flexShrink: { md: 0 },
           }}
         >
-          <Sidebar />
+          {isMdDown ? (
+            <Drawer
+              variant="temporary"
+              open={mobileOpen}
+              onClose={handleDrawerToggle}
+              ModalProps={{ keepMounted: true }}
+              sx={{
+                '& .MuiDrawer-paper': {
+                  width: drawerWidth,
+                  boxSizing: 'border-box',
+                  background: 'linear-gradient(180deg, #D1F0ED, #F0F8FA)',
+                },
+              }}
+            >
+              {drawerContent}
+            </Drawer>
+          ) : (
+            <Drawer
+              variant="permanent"
+              open
+              sx={{
+                '& .MuiDrawer-paper': {
+                  width: drawerWidth,
+                  boxSizing: 'border-box',
+                  borderRight: '1px solid',
+                  borderColor: 'divider',
+                  background: 'linear-gradient(180deg, #D1F0ED, #F0F8FA)',
+                  mt: '64px',
+                  height: 'calc(100vh - 64px)',
+                },
+              }}
+            >
+              {drawerContent}
+            </Drawer>
+          )}
         </Box>
-      ) : (
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }}
+
+        <Box
+          component="main"
           sx={{
-            '& .MuiDrawer-paper': {
-              width: 240,
-              background: 'linear-gradient(to left, #D1F0ED, #F0F8FA)',
-              pt:'64px'
-            },
+            flexGrow: 1,
+            width: '100%',
+            mt: '64px',
+            px: { xs: 2, md: 4 },
+            pb: 4,
           }}
         >
-          <Sidebar onDrawerToggle={handleDrawerToggle} />
-        </Drawer>
-      )}
-
-      {/* Main Content */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          marginTop: '64px',
-          marginLeft: isMobile ? 0 : '200px',
-          padding: 2,
-          flexGrow: 1,
-          height: 'calc(100vh - 64px)',
-          overflowY: 'auto',
-        }}
-      >
-        {children}
+          <Box sx={{ maxWidth: 1280, mx: 'auto', width: '100%' }}>
+            <Outlet />
+          </Box>
+        </Box>
       </Box>
     </Box>
-  );
-};
+  )
+}
 
-export default DashboardLayout;
+export default DashboardLayout

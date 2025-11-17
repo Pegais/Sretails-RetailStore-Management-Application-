@@ -23,4 +23,10 @@ router.get(
   billUploadController.getBillStatus
 );
 
+router.get(
+  '/all',
+  isAuthenticated,
+  billUploadController.getAllBills
+);
+
 module.exports = router;

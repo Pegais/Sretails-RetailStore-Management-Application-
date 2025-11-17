@@ -8,6 +8,9 @@ const s3 = new AWS.S3({
   region: process.env.AWS_REGION || 'ap-south-1'
 });
 
+const buildKey = (storeId, fileName, folder = 'bills') =>
+  `${folder}/${storeId}/${Date.now()}-${fileName}`
+
 exports.uploadBillImage = async (buffer, fileName, storeId) => {
   try {
     // 1. Compress image (reduce size by 70%)
@@ -17,7 +20,7 @@ exports.uploadBillImage = async (buffer, fileName, storeId) => {
       .toBuffer();
 
     // 2. Upload to S3
-    const key = `bills/${storeId}/${Date.now()}-${fileName}`;
+    const key = buildKey(storeId, fileName);
     
     const params = {
       Bucket: process.env.S3_BUCKET_NAME,
@@ -40,6 +43,31 @@ exports.uploadBillImage = async (buffer, fileName, storeId) => {
     throw new Error('Failed to upload to S3');
   }
 };
+
+exports.uploadBillFile = async (buffer, fileName, storeId, options = {}) => {
+  try {
+    const key = buildKey(storeId, fileName, options.folder || 'bills')
+
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: options.contentType || 'application/octet-stream',
+      ACL: 'private',
+    }
+
+    const result = await s3.upload(params).promise()
+
+    return {
+      s3Url: result.Location,
+      s3Key: result.Key,
+      size: buffer.length,
+    }
+  } catch (error) {
+    console.error('S3 Upload Error:', error)
+    throw new Error('Failed to upload to S3')
+  }
+}
 
 // Get signed URL for viewing (temporary access)
 exports.getSignedUrl = (s3Key) => {
