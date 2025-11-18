@@ -11,8 +11,9 @@ const getApiBaseURL = () => {
       ? 'http://localhost:5000/'
       : `http://${hostname}:5000/`
   }
-  // In production, use environment variable or default
-  return import.meta.env.VITE_API_URL || 'http://localhost:5000/'
+  // In production, use empty string for relative paths (Nginx will handle routing)
+  // Or use VITE_API_URL if explicitly set
+  return import.meta.env.VITE_API_URL || ''
 }
 
 const axiosInstance = axios.create({

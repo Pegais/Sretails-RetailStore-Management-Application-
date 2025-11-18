@@ -24,7 +24,7 @@ app.use(passport.initialize())
 app.use(passport.session())
 
 // Middlewares
-// Allow CORS from localhost and common network IPs
+// CORS Configuration
 const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
@@ -34,23 +34,49 @@ const allowedOrigins = [
   /^http:\/\/172\.(1[6-9]|2[0-9]|3[01])\.\d+\.\d+:5173$/,
 ]
 
+// Add production frontend URL from environment
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL)
+  // Also add without port if it's an IP
+  const frontendUrl = process.env.FRONTEND_URL
+  if (frontendUrl.startsWith('http://') || frontendUrl.startsWith('https://')) {
+    try {
+      const url = new URL(frontendUrl)
+      if (url.port) {
+        // Add version without port
+        allowedOrigins.push(`${url.protocol}//${url.hostname}`)
+      }
+    } catch (e) {
+      // Invalid URL, skip
+    }
+  }
+}
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true)
       
-      // Check if origin matches allowed patterns
-      if (allowedOrigins.some((pattern) => {
-        if (typeof pattern === 'string') {
-          return origin === pattern
+      // In production, be more strict
+      if (process.env.NODE_ENV === 'production') {
+        // Check if origin matches allowed patterns
+        const isAllowed = allowedOrigins.some((pattern) => {
+          if (typeof pattern === 'string') {
+            return origin === pattern || origin.startsWith(pattern)
+          }
+          return pattern.test(origin)
+        })
+        
+        if (isAllowed) {
+          callback(null, true)
+        } else {
+          console.warn(`CORS blocked origin in production: ${origin}`)
+          callback(new Error('Not allowed by CORS'))
         }
-        return pattern.test(origin)
-      })) {
-        callback(null, true)
       } else {
-        console.warn(`CORS blocked origin: ${origin}`)
-        callback(null, true) // Allow anyway for development (remove in production)
+        // In development, allow all
+        callback(null, true)
       }
     },
     credentials: true,
@@ -103,6 +129,15 @@ app.use('/api/sales', salesRoutes)
 //barcode routes
 app.use('/api/barcode', barcodeRoutes)
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  })
+})
 
 // Server start
 const PORT = process.env.PORT || 5000
