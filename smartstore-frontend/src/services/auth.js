@@ -2,13 +2,15 @@ import axios from 'axios'
 
 // Get the current hostname (works for both localhost and network IP)
 const getApiBaseURL = () => {
-  if (import.meta.env.DEV) {
+  if (process.env.NODE_ENV === 'development') {
     const hostname = window.location.hostname
     return hostname === 'localhost' || hostname === '127.0.0.1'
       ? 'http://localhost:5000'
       : `http://${hostname}:5000`
   }
-  return import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  // In production, use empty string for relative paths (Nginx will handle routing)
+  // Or use REACT_APP_API_URL if explicitly set (CRA uses REACT_APP_ prefix)
+  return process.env.REACT_APP_API_URL || ''
 }
 
 const API = axios.create({
