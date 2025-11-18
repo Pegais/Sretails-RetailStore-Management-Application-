@@ -42,9 +42,15 @@ if (process.env.FRONTEND_URL) {
   if (frontendUrl.startsWith('http://') || frontendUrl.startsWith('https://')) {
     try {
       const url = new URL(frontendUrl)
-      if (url.port) {
-        // Add version without port
-        allowedOrigins.push(`${url.protocol}//${url.hostname}`)
+      // Add version without port
+      allowedOrigins.push(`${url.protocol}//${url.hostname}`)
+      // Also add with port 80/443 if not specified
+      if (!url.port) {
+        if (url.protocol === 'https:') {
+          allowedOrigins.push(`${url.protocol}//${url.hostname}:443`)
+        } else {
+          allowedOrigins.push(`${url.protocol}//${url.hostname}:80`)
+        }
       }
     } catch (e) {
       // Invalid URL, skip
@@ -63,7 +69,16 @@ app.use(
         // Check if origin matches allowed patterns
         const isAllowed = allowedOrigins.some((pattern) => {
           if (typeof pattern === 'string') {
-            return origin === pattern || origin.startsWith(pattern)
+            // Exact match
+            if (origin === pattern) return true
+            // Match without port (http://IP and http://IP:80 are same)
+            const originUrl = new URL(origin)
+            const patternUrl = new URL(pattern)
+            if (originUrl.protocol === patternUrl.protocol && 
+                originUrl.hostname === patternUrl.hostname) {
+              return true
+            }
+            return false
           }
           return pattern.test(origin)
         })
@@ -72,6 +87,7 @@ app.use(
           callback(null, true)
         } else {
           console.warn(`CORS blocked origin in production: ${origin}`)
+          console.warn(`Allowed origins:`, allowedOrigins.filter(p => typeof p === 'string'))
           callback(new Error('Not allowed by CORS'))
         }
       } else {
