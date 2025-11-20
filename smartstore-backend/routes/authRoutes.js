@@ -45,7 +45,9 @@ router.get('/google/callback',
     })
 
     // Redirect to frontend dashboard
-    res.redirect('http://localhost:5173/dashboard') // ✅ Change this as per your frontend
+    // Use FRONTEND_URL from environment or default to current origin
+    const frontendUrl = process.env.FRONTEND_URL || (req.protocol + '://' + req.get('host'))
+    res.redirect(`${frontendUrl}/dashboard`)
   }
 )
 

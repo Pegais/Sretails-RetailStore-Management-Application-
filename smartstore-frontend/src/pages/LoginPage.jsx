@@ -359,12 +359,16 @@ export default function LoginPage() {
                                             fullWidth
                                             variant="outlined"
                                             onClick={() => {
-                                                // Use the same hostname as current page for backend
+                                                // Use relative path - Nginx will route /auth/google to backend
+                                                // Works in both development (if Nginx is set up) and production
                                                 const hostname = window.location.hostname
-                                                const backendURL = hostname === 'localhost' || hostname === '127.0.0.1'
-                                                  ? 'http://localhost:5000'
-                                                  : `http://${hostname}:5000`
-                                                window.location.href = `${backendURL}/auth/google`
+                                                if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                                                    // Local development: use localhost:5000 directly
+                                                    window.location.href = 'http://localhost:5000/auth/google'
+                                                } else {
+                                                    // Production or network access: use relative path (Nginx handles it)
+                                                    window.location.href = '/auth/google'
+                                                }
                                             }}
                                         >
                                             Login with Google
