@@ -1,6 +1,7 @@
 // queues/billProcessingQueue.js
 const Queue = require('bull');
 
+
 const billProcessingQueue = new Queue('bill-processing', {
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
