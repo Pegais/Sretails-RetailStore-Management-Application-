@@ -37,11 +37,14 @@ router.get('/google/callback',
       { expiresIn: '3d' }
     )
 
+    // Cookie settings for cross-origin HTTPS (Railway + Vercel)
+    const isProduction = process.env.NODE_ENV === 'production'
     res.cookie('smartstore_token', token, {
       httpOnly: true,
-      secure: false, // true in production
-      sameSite: 'Lax',
-      maxAge: 3 * 24 * 60 * 60 * 1000
+      secure: isProduction, // true for HTTPS in production
+      sameSite: isProduction ? 'None' : 'Lax', // 'None' required for cross-origin cookies
+      maxAge: 3 * 24 * 60 * 60 * 1000, // 3 days
+      domain: isProduction ? undefined : undefined // Let browser set domain automatically
     })
 
     // Redirect to frontend dashboard

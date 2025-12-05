@@ -66,11 +66,14 @@ exports.login = async (req, res) => {
 
     const token = generateToken(user._id, user.role, user.storeId?._id)
 
+    // Cookie settings for cross-origin HTTPS (Railway + Vercel)
+    const isProduction = process.env.NODE_ENV === 'production'
     res.cookie('smartstore_token', token, {
       httpOnly: true,
-      secure: false, // ✅ Set to true in production with HTTPS
-      sameSite: 'Lax',
-      maxAge: 3 * 24 * 60 * 60 * 1000 // 3 days
+      secure: isProduction, // true for HTTPS in production
+      sameSite: isProduction ? 'None' : 'Lax', // 'None' required for cross-origin cookies
+      maxAge: 3 * 24 * 60 * 60 * 1000, // 3 days
+      domain: isProduction ? undefined : undefined // Let browser set domain automatically
     })
 
     res.json({
@@ -124,10 +127,11 @@ exports.resetPassword = (req, res) => {
 }
 
 exports.logout = (req, res) => {
+  const isProduction = process.env.NODE_ENV === 'production'
   res.clearCookie('smartstore_token', {
     httpOnly: true,
-    secure: false, // set to true in production with HTTPS
-    sameSite: 'Lax'
+    secure: isProduction, // true for HTTPS in production
+    sameSite: isProduction ? 'None' : 'Lax' // 'None' required for cross-origin cookies
   })
   res.json({ message: 'Logged out successfully' })
 }

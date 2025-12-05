@@ -12,96 +12,50 @@ const session = require('cookie-session')
 
 const app = express()
 // Cookie Session config
+app.use(cookieParser())
+const isProduction = process.env.NODE_ENV === 'production'
 app.use(
   session({
     name: 'smartstore-session',
     maxAge: 24 * 60 * 60 * 1000, // 1 day
-    keys: [process.env.JWT_SECRET]
+    keys: [process.env.JWT_SECRET],
+    secure: isProduction, // true for HTTPS in production
+    sameSite: isProduction ? 'None' : 'Lax', // 'None' required for cross-origin cookies
+    httpOnly: true
   })
 )
 
 app.use(passport.initialize())
 app.use(passport.session())
+//used to jwt cookie
 
 // Middlewares
-// CORS Configuration
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  // Add common local network IPs (192.168.x.x, 10.0.x.x, 172.16.x.x - 172.31.x.x)
-  /^http:\/\/192\.168\.\d+\.\d+:5173$/,
-  /^http:\/\/10\.\d+\.\d+\.\d+:5173$/,
-  /^http:\/\/172\.(1[6-9]|2[0-9]|3[01])\.\d+\.\d+:5173$/,
-]
+// CORS Configuration for cross-origin cookie sharing
+const allowedOrigins = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+  : ['http://localhost:3000', 'http://localhost:5173']
 
-// Add production frontend URL from environment
-if (process.env.FRONTEND_URL) {
-  allowedOrigins.push(process.env.FRONTEND_URL)
-  // Also add without port if it's an IP
-  const frontendUrl = process.env.FRONTEND_URL
-  if (frontendUrl.startsWith('http://') || frontendUrl.startsWith('https://')) {
-    try {
-      const url = new URL(frontendUrl)
-      // Add version without port
-      allowedOrigins.push(`${url.protocol}//${url.hostname}`)
-      // Also add with port 80/443 if not specified
-      if (!url.port) {
-        if (url.protocol === 'https:') {
-          allowedOrigins.push(`${url.protocol}//${url.hostname}:443`)
-        } else {
-          allowedOrigins.push(`${url.protocol}//${url.hostname}:80`)
-        }
-      }
-    } catch (e) {
-      // Invalid URL, skip
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, or same-origin requests)
+    if (!origin) return callback(null, true)
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
     }
-  }
-}
+  },
+  credentials: true, // Required for cookies to be sent cross-origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie']
+}))
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, etc.)
-      if (!origin) return callback(null, true)
-      
-      // In production, be more strict
-      if (process.env.NODE_ENV === 'production') {
-        // Check if origin matches allowed patterns
-        const isAllowed = allowedOrigins.some((pattern) => {
-          if (typeof pattern === 'string') {
-            // Exact match
-            if (origin === pattern) return true
-            // Match without port (http://IP and http://IP:80 are same)
-            const originUrl = new URL(origin)
-            const patternUrl = new URL(pattern)
-            if (originUrl.protocol === patternUrl.protocol && 
-                originUrl.hostname === patternUrl.hostname) {
-              return true
-            }
-            return false
-          }
-          return pattern.test(origin)
-        })
-        
-        if (isAllowed) {
-          callback(null, true)
-        } else {
-          console.warn(`CORS blocked origin in production: ${origin}`)
-          console.warn(`Allowed origins:`, allowedOrigins.filter(p => typeof p === 'string'))
-          callback(new Error('Not allowed by CORS'))
-        }
-      } else {
-        // In development, allow all
-        callback(null, true)
-      }
-    },
-    credentials: true,
-  })
-)
+
 app.use(express.json())
 
-//used to jwt cookie
-app.use(cookieParser())
 
 // MongoDB connection
 mongoose

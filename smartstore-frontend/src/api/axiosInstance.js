@@ -11,14 +11,25 @@ const getApiBaseURL = () => {
       ? 'http://localhost:5000/'
       : `http://${hostname}:5000/`
   }
-  // In production, use empty string for relative paths (Nginx will handle routing)
-  // Or use REACT_APP_API_URL if explicitly set (CRA uses REACT_APP_ prefix)
-  return process.env.REACT_APP_API_URL || ''
+  // In production (Vercel), use REACT_APP_API_URL pointing to Railway backend
+  // This must be set in Vercel environment variables
+  // Example: REACT_APP_API_URL=https://your-backend.railway.app
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL.endsWith('/') 
+      ? process.env.REACT_APP_API_URL 
+      : process.env.REACT_APP_API_URL + '/'
+  }
+  // Fallback: empty string for same-origin (not applicable for cross-origin)
+  console.warn('REACT_APP_API_URL not set in production. Please set it in Vercel environment variables.')
+  return ''
 }
 
 const axiosInstance = axios.create({
   baseURL: getApiBaseURL(),
-  withCredentials: true // For JWT cookie support
+  withCredentials: true, // Required for cross-origin cookie sharing
+  headers: {
+    'Content-Type': 'application/json'
+  }
 })
 
 export default axiosInstance
